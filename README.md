@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="German-OCR Logo" width="200"/>
+  <img src="docs/logo-german-ocr.png" alt="German-OCR Logo" width="450"/>
 </p>
 
 <h1 align="center">German-OCR</h1>
