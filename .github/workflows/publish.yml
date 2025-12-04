@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-    name: Build distribution
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install build dependencies
         run: |
@@ -28,26 +27,23 @@ jobs:
       - name: Check package
         run: twine check dist/*
 
-      - name: Upload artifact
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist
           path: dist/
 
-  publish-pypi:
-    name: Publish to PyPI
+  publish:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/german-ocr
+    environment: pypi
     permissions:
       id-token: write
     steps:
-      - name: Download artifact
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist
           path: dist/
 
       - name: Publish to PyPI
