@@ -2,8 +2,6 @@
   <img src="docs/logo-german-ocr.png" alt="German-OCR Logo" width="450"/>
 </p>
 
-<h1 align="center">German-OCR</h1>
-
 <p align="center">
   <strong>High-performance German document OCR using fine-tuned Qwen2-VL vision-language model</strong>
 </p>
