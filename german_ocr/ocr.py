@@ -31,7 +31,7 @@ class GermanOCR:
         >>> print(text)
 
         >>> # Use specific backend
-        >>> ocr = GermanOCR(backend="ollama", model_name="deepseek-ocr")
+        >>> ocr = GermanOCR(backend="ollama", model_name="Keyvan/german-ocr")
         >>> results = ocr.extract_batch(["img1.png", "img2.png"])
     """
 
@@ -105,7 +105,7 @@ class GermanOCR:
         """
         from german_ocr.ollama_backend import OllamaBackend
 
-        default_model = "deepseek-ocr"
+        default_model = "Keyvan/german-ocr"
         model = model_name if model_name else default_model
 
         try:
@@ -129,7 +129,7 @@ class GermanOCR:
         """
         from german_ocr.hf_backend import HuggingFaceBackend
 
-        default_model = "deepseek-ai/deepseek-vl-1.3b-chat"
+        default_model = "Keyven/german-ocr"
         model = model_name if model_name else default_model
 
         try:

@@ -1,4 +1,4 @@
-"""HuggingFace Transformers backend for German OCR."""
+"""HuggingFace Transformers backend for German OCR using Qwen2-VL."""
 
 import logging
 from pathlib import Path
@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional, Union
 
 import torch
 from PIL import Image
-from transformers import AutoModelForVision2Seq, AutoProcessor
 
 from german_ocr.utils import load_image
 
@@ -17,7 +16,7 @@ class HuggingFaceBackend:
     """HuggingFace Transformers backend for OCR inference.
 
     This backend uses HuggingFace Transformers library to perform OCR
-    using vision-language models like DeepSeek-VL.
+    using Qwen2-VL vision-language models fine-tuned for German documents.
 
     Args:
         model_name: HuggingFace model identifier
@@ -27,7 +26,7 @@ class HuggingFaceBackend:
 
     def __init__(
         self,
-        model_name: str = "deepseek-ai/deepseek-vl-1.3b-chat",
+        model_name: str = "Keyven/german-ocr",
         device: str = "auto",
         quantization: Optional[str] = None,
     ) -> None:
@@ -64,13 +63,13 @@ class HuggingFaceBackend:
             RuntimeError: If model loading fails
         """
         try:
+            from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+
             # Load processor
-            self.processor = AutoProcessor.from_pretrained(
-                self.model_name, trust_remote_code=True
-            )
+            self.processor = AutoProcessor.from_pretrained(self.model_name)
 
             # Configure quantization if requested
-            model_kwargs: Dict[str, Any] = {"trust_remote_code": True}
+            model_kwargs: Dict[str, Any] = {"device_map": "auto"}
 
             if self.quantization == "4bit":
                 from transformers import BitsAndBytesConfig
@@ -84,14 +83,10 @@ class HuggingFaceBackend:
             elif self.device != "cpu":
                 model_kwargs["torch_dtype"] = torch.float16
 
-            # Load model
-            self.model = AutoModelForVision2Seq.from_pretrained(
+            # Load Qwen2-VL model
+            self.model = Qwen2VLForConditionalGeneration.from_pretrained(
                 self.model_name, **model_kwargs
             )
-
-            # Move to device if not quantized
-            if self.quantization is None:
-                self.model = self.model.to(self.device)
 
             self.model.eval()
             logger.info("Model loaded successfully")
@@ -124,15 +119,33 @@ class HuggingFaceBackend:
         # Load image
         pil_image = load_image(image)
 
-        # Prepare prompt
+        # Prepare prompt (German for better results)
         if prompt is None:
-            prompt = "Extract all text from this image. Return only the text content."
+            prompt = "Extrahiere den gesamten Text aus diesem Dokument im Markdown-Format."
 
-        # Prepare inputs
+        # Prepare inputs using Qwen2-VL chat format
         try:
+            from qwen_vl_utils import process_vision_info
+
+            messages = [{
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": pil_image},
+                    {"type": "text", "text": prompt}
+                ]
+            }]
+
+            text = self.processor.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+            image_inputs, video_inputs = process_vision_info(messages)
             inputs = self.processor(
-                images=pil_image, text=prompt, return_tensors="pt"
-            ).to(self.device)
+                text=[text],
+                images=image_inputs,
+                videos=video_inputs,
+                padding=True,
+                return_tensors="pt"
+            ).to(self.model.device)
 
             # Generate
             with torch.no_grad():
@@ -140,25 +153,20 @@ class HuggingFaceBackend:
                     **inputs,
                     max_new_tokens=max_new_tokens,
                     do_sample=False,
-                    pad_token_id=self.processor.tokenizer.pad_token_id,
-                    eos_token_id=self.processor.tokenizer.eos_token_id,
                 )
 
             # Decode output
             generated_text = self.processor.batch_decode(
-                outputs, skip_special_tokens=True
+                outputs[:, inputs.input_ids.shape[1]:],
+                skip_special_tokens=True
             )[0]
-
-            # Clean up the output (remove the prompt if it's echoed)
-            if prompt in generated_text:
-                generated_text = generated_text.replace(prompt, "").strip()
 
             if structured:
                 return {
                     "text": generated_text,
                     "model": self.model_name,
                     "backend": "huggingface",
-                    "confidence": 1.0,  # Most HF models don't provide confidence
+                    "confidence": 1.0,
                 }
             return generated_text
 

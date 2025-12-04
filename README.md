@@ -34,7 +34,7 @@ pip install german-ocr[all]
 For Ollama backend (recommended):
 ```bash
 # Install Ollama from https://ollama.ai
-ollama pull german-ocr-turbo
+ollama pull Keyvan/german-ocr
 ```
 
 ### Python API
@@ -167,6 +167,7 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 **Keyvan Hardani**
 - Website: [keyvan.ai](https://keyvan.ai)
+- LinkedIn: [linkedin.com/in/keyvanhardani](https://www.linkedin.com/in/keyvanhardani/)
 - Email: hello@keyvan.ai
 - GitHub: [@Keyvanhardani](https://github.com/Keyvanhardani)
 
@@ -174,5 +175,5 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 
 - [PyPI Package](https://pypi.org/project/german-ocr/)
 - [GitHub Repository](https://github.com/Keyvanhardani/german-ocr)
-- [Model on HuggingFace](https://huggingface.co/neuralabs/german-ocr-turbo)
-- [Ollama Model](https://ollama.ai/library/german-ocr-turbo)
+- [Model on HuggingFace](https://huggingface.co/Keyven/german-ocr)
+- [Ollama Model](https://ollama.com/Keyvan/german-ocr)

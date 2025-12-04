@@ -1,4 +1,4 @@
-"""Ollama backend for German OCR using DeepSeek models."""
+"""Ollama backend for German OCR using Qwen2-VL models."""
 
 import base64
 import logging
@@ -18,7 +18,7 @@ class OllamaBackend:
     """Ollama backend for OCR inference.
 
     This backend uses Ollama's API to perform OCR on images using
-    DeepSeek or other vision-language models.
+    Qwen2-VL vision-language models fine-tuned for German documents.
 
     Args:
         model_name: Name of the Ollama model to use
@@ -28,9 +28,9 @@ class OllamaBackend:
 
     def __init__(
         self,
-        model_name: str = "deepseek-ocr",
+        model_name: str = "Keyvan/german-ocr",
         base_url: str = "http://localhost:11434",
-        timeout: int = 60,
+        timeout: int = 120,
     ) -> None:
         """Initialize the Ollama backend."""
         self.model_name = model_name
@@ -107,15 +107,15 @@ class OllamaBackend:
         pil_image = load_image(image)
         image_b64 = self._image_to_base64(pil_image)
 
-        # Prepare prompt
+        # Prepare prompt (German for better results)
         if prompt is None:
             if structured:
                 prompt = (
-                    "Extract all text from this image. "
-                    "Return the result as JSON with 'text' and 'confidence' fields."
+                    "Extrahiere den gesamten Text aus diesem Dokument. "
+                    "Gib das Ergebnis strukturiert im Markdown-Format aus."
                 )
             else:
-                prompt = "Extract all text from this image. Return only the text content."
+                prompt = "Extrahiere den gesamten Text aus diesem Dokument im Markdown-Format."
 
         # Make request to Ollama
         payload = {
