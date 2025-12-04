@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Keyvanhardani/german-ocr/main/docs/logo.png" alt="German-OCR Logo" width="200"/>
+  <img src="docs/logo.png" alt="German-OCR Logo" width="200"/>
 </p>
 
 <h1 align="center">German-OCR</h1>
