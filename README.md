@@ -99,7 +99,7 @@ Tested on RTX 4060 8GB with 5x warm runs:
 | German-OCR v1 | 3.2GB | 5.5s | 75% |
 | DeepSeek-OCR | 6.7GB | 15.8s | 70% |
 | MiniCPM-V | 5.5GB | 8.9s | 67% |
-| LLaVA 7B | 4.7GB | 3.9s | 0% |
+| LLaVA 7B | 4.7GB  | 12.9s | 45%     |
 
 **German-OCR Turbo is 3x faster than DeepSeek-OCR!**
 
