@@ -153,7 +153,23 @@ Examples:
     parser.add_argument(
         "--model",
         type=str,
-        help="Model name to use (backend-specific)",
+        choices=["german-ocr-turbo", "german-ocr"],
+        default="german-ocr-turbo",
+        help="Model to use: german-ocr-turbo (fastest, 1.9GB) or german-ocr (3.2GB)",
+    )
+    
+    parser.add_argument(
+        "--format",
+        type=str,
+        choices=["markdown", "json", "text", "html"],
+        default="markdown",
+        help="Output format for OCR extraction (default: markdown)",
+    )
+    
+    parser.add_argument(
+        "--list-models",
+        action="store_true",
+        help="List available German-OCR models and exit",
     )
 
     parser.add_argument(
@@ -206,6 +222,22 @@ Examples:
         for backend, available in backends.items():
             status = "[OK]" if available else "[--]"
             print(f"  {status} {backend}")
+        sys.exit(0)
+    
+    # List models if requested
+    if args.list_models:
+        from german_ocr.ollama_backend import list_available_models
+        models = list_available_models()
+        print("Available German-OCR models:")
+        print()
+        for key, info in models.items():
+            print(f"  {key}:")
+            print(f"    Name: {info['name']}")
+            print(f"    Size: {info['size']}")
+            print(f"    Base: {info['base']}")
+            print(f"    Speed: {info['speed']}")
+            print(f"    Accuracy: {info['accuracy']}")
+            print()
         sys.exit(0)
 
     # Validate input was provided

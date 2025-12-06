@@ -105,7 +105,7 @@ class GermanOCR:
         """
         from german_ocr.ollama_backend import OllamaBackend
 
-        default_model = "Keyvan/german-ocr"
+        default_model = "german-ocr-turbo"
         model = model_name if model_name else default_model
 
         try:
@@ -252,3 +252,13 @@ class GermanOCR:
             "ollama": OllamaBackend.is_available(),
             "huggingface": HuggingFaceBackend.is_available(),
         }
+
+    @staticmethod
+    def list_models() -> Dict[str, Dict[str, str]]:
+        """List all available German-OCR models for Ollama backend.
+
+        Returns:
+            Dictionary of available models with their details
+        """
+        from german_ocr.ollama_backend import list_available_models
+        return list_available_models()

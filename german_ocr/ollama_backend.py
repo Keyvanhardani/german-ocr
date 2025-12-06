@@ -1,4 +1,4 @@
-"""Ollama backend for German OCR using Qwen2-VL models."""
+"""Ollama backend for German OCR using Qwen2-VL and Qwen3-VL models."""
 
 import base64
 import logging
@@ -13,37 +13,58 @@ from german_ocr.utils import load_image
 
 logger = logging.getLogger(__name__)
 
+# Available German-OCR models on Ollama
+AVAILABLE_MODELS = {
+    "german-ocr-turbo": {
+        "name": "Keyvan/german-ocr-turbo",
+        "display": "German-OCR Turbo",
+        "size": "1.9GB",
+        "base": "Qwen3-VL-2B",
+        "speed": "~5s",
+        "accuracy": "100%",
+        "description": "Fastest model, optimized for speed and accuracy",
+    },
+    "german-ocr": {
+        "name": "Keyvan/german-ocr",
+        "display": "German-OCR v1",
+        "size": "3.2GB",
+        "base": "Qwen2.5-VL-3B",
+        "speed": "~5-7s",
+        "accuracy": "75%",
+        "description": "Standard model with high accuracy",
+    },
+}
+
+DEFAULT_MODEL = "german-ocr-turbo"
+
+
+def list_available_models() -> Dict[str, Dict[str, str]]:
+    """List all available German-OCR models."""
+    return AVAILABLE_MODELS.copy()
+
+
+def get_model_name(model_key: str) -> str:
+    """Get the full Ollama model name from a short key."""
+    if model_key in AVAILABLE_MODELS:
+        return AVAILABLE_MODELS[model_key]["name"]
+    return model_key
+
 
 class OllamaBackend:
-    """Ollama backend for OCR inference.
-
-    This backend uses Ollama's API to perform OCR on images using
-    Qwen2-VL vision-language models fine-tuned for German documents.
-
-    Args:
-        model_name: Name of the Ollama model to use
-        base_url: Base URL of the Ollama server
-        timeout: Request timeout in seconds
-    """
+    """Ollama backend for OCR inference."""
 
     def __init__(
         self,
-        model_name: str = "Keyvan/german-ocr",
+        model_name: str = "german-ocr-turbo",
         base_url: str = "http://localhost:11434",
         timeout: int = 120,
     ) -> None:
-        """Initialize the Ollama backend."""
-        self.model_name = model_name
+        self.model_name = get_model_name(model_name)
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._verify_connection()
 
     def _verify_connection(self) -> None:
-        """Verify connection to Ollama server.
-
-        Raises:
-            ConnectionError: If Ollama server is not reachable
-        """
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             response.raise_for_status()
@@ -55,11 +76,6 @@ class OllamaBackend:
             ) from e
 
     def _verify_model(self) -> bool:
-        """Check if the specified model is available.
-
-        Returns:
-            True if model is available, False otherwise
-        """
         try:
             response = requests.get(f"{self.base_url}/api/tags", timeout=5)
             response.raise_for_status()
@@ -71,14 +87,6 @@ class OllamaBackend:
             return False
 
     def _image_to_base64(self, image: Image.Image) -> str:
-        """Convert PIL Image to base64 string.
-
-        Args:
-            image: PIL Image object
-
-        Returns:
-            Base64 encoded string
-        """
         buffer = BytesIO()
         image.save(buffer, format="PNG")
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
@@ -88,36 +96,20 @@ class OllamaBackend:
         image: Union[str, Path, Image.Image],
         prompt: Optional[str] = None,
         structured: bool = False,
+        output_format: str = "markdown",
     ) -> Union[str, Dict[str, Any]]:
-        """Extract text from an image using Ollama.
-
-        Args:
-            image: Path to image file or PIL Image object
-            prompt: Custom prompt for OCR (optional)
-            structured: Whether to return structured output (dict)
-
-        Returns:
-            Extracted text as string or structured dict
-
-        Raises:
-            ValueError: If image is invalid
-            RuntimeError: If OCR extraction fails
-        """
-        # Load and prepare image
         pil_image = load_image(image)
         image_b64 = self._image_to_base64(pil_image)
 
-        # Prepare prompt (German for better results)
         if prompt is None:
-            if structured:
-                prompt = (
-                    "Extrahiere den gesamten Text aus diesem Dokument. "
-                    "Gib das Ergebnis strukturiert im Markdown-Format aus."
-                )
-            else:
-                prompt = "Extrahiere den gesamten Text aus diesem Dokument im Markdown-Format."
+            format_prompts = {
+                "markdown": "Extrahiere den gesamten Text aus diesem Dokument im Markdown-Format.",
+                "json": "Extrahiere den gesamten Text aus diesem Dokument als JSON.",
+                "text": "Extrahiere den gesamten Text aus diesem Dokument als reinen Text.",
+                "html": "Extrahiere den gesamten Text aus diesem Dokument als HTML.",
+            }
+            prompt = format_prompts.get(output_format, format_prompts["markdown"])
 
-        # Make request to Ollama
         payload = {
             "model": self.model_name,
             "prompt": prompt,
@@ -133,7 +125,6 @@ class OllamaBackend:
             )
             response.raise_for_status()
             result = response.json()
-
             extracted_text = result.get("response", "").strip()
 
             if structured:
@@ -141,7 +132,8 @@ class OllamaBackend:
                     "text": extracted_text,
                     "model": self.model_name,
                     "backend": "ollama",
-                    "confidence": 1.0,  # Ollama doesn't provide confidence scores
+                    "format": output_format,
+                    "confidence": 1.0,
                 }
             return extracted_text
 
@@ -153,21 +145,14 @@ class OllamaBackend:
         images: List[Union[str, Path, Image.Image]],
         prompt: Optional[str] = None,
         structured: bool = False,
+        output_format: str = "markdown",
     ) -> List[Union[str, Dict[str, Any]]]:
-        """Extract text from multiple images.
-
-        Args:
-            images: List of image paths or PIL Image objects
-            prompt: Custom prompt for OCR (optional)
-            structured: Whether to return structured output
-
-        Returns:
-            List of extracted texts or structured dicts
-        """
         results = []
         for i, image in enumerate(images):
             try:
-                result = self.extract(image, prompt=prompt, structured=structured)
+                result = self.extract(
+                    image, prompt=prompt, structured=structured, output_format=output_format
+                )
                 results.append(result)
                 logger.info(f"Processed image {i+1}/{len(images)}")
             except Exception as e:
@@ -180,14 +165,13 @@ class OllamaBackend:
 
     @staticmethod
     def is_available() -> bool:
-        """Check if Ollama backend is available.
-
-        Returns:
-            True if Ollama is running and accessible
-        """
         try:
             response = requests.get("http://localhost:11434/api/tags", timeout=2)
             response.raise_for_status()
             return True
         except Exception:
             return False
+
+    @staticmethod
+    def list_models() -> Dict[str, Dict[str, str]]:
+        return list_available_models()

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>High-performance German document OCR using fine-tuned Qwen2-VL vision-language model</strong>
+  <strong>High-performance German document OCR using fine-tuned Qwen2-VL and Qwen3-VL vision-language models</strong>
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
   <a href="https://huggingface.co/Keyven/german-ocr"><img src="https://img.shields.io/badge/%F0%9F%A4%97-HuggingFace-yellow" alt="HuggingFace"></a>
-  <a href="https://ollama.com/Keyvan/german-ocr"><img src="https://img.shields.io/badge/Ollama-Available-green" alt="Ollama"></a>
+  <a href="https://ollama.com/Keyvan/german-ocr-turbo"><img src="https://img.shields.io/badge/Ollama-Turbo-green" alt="Ollama"></a>
 </p>
 
 <p align="center">
@@ -26,6 +26,7 @@
 |---------|-------------|
 | **High Accuracy** | 100% accuracy on German invoice test data |
 | **Multiple Backends** | Ollama (fast, local) or HuggingFace Transformers |
+| **Multiple Output Formats** | Markdown, JSON, HTML, or plain text |
 | **Easy to Use** | Simple Python API and CLI |
 | **Batch Processing** | Process multiple documents efficiently |
 | **Structured Output** | Get results as plain text or JSON with metadata |
@@ -33,33 +34,23 @@
 
 ## Model Variants
 
-| Model | Size | Base | Speed | Best For |
-|-------|------|------|-------|----------|
-| [Keyvan/german-ocr](https://ollama.com/Keyvan/german-ocr) | ~4 GB | Qwen2-VL-2B | ~2-5s | Fast local inference |
-| [Keyven/german-ocr](https://huggingface.co/Keyven/german-ocr) | 4.4 GB | Qwen2-VL-2B | ~1-3s | GPU acceleration |
-| [Keyven/german-ocr-3b](https://huggingface.co/Keyven/german-ocr-3b) | 7.5 GB | Qwen2.5-VL-3B | ~3-5s | Higher accuracy |
+| Model | Size | Base | Speed | Accuracy | Best For |
+|-------|------|------|-------|----------|----------|
+| [Keyvan/german-ocr-turbo](https://ollama.com/Keyvan/german-ocr-turbo) | 1.9 GB | Qwen3-VL-2B | ~5s | 100% | Fastest, recommended |
+| [Keyvan/german-ocr](https://ollama.com/Keyvan/german-ocr) | 3.2 GB | Qwen2.5-VL-3B | ~5-7s | 75% | Standard model |
+| [Keyven/german-ocr](https://huggingface.co/Keyven/german-ocr) | 4.4 GB | Qwen2-VL-2B | ~1-3s | 100% | GPU acceleration |
 
 ## Installation
 
 ```bash
-# Basic installation (Ollama backend)
 pip install german-ocr
-
-# With HuggingFace backend
-pip install german-ocr[hf]
-
-# All features
-pip install german-ocr[all]
 ```
 
 ## Quick Start
 
-### Prerequisites
-
-For Ollama backend (recommended):
 ```bash
-# Install Ollama from https://ollama.ai
-ollama pull Keyvan/german-ocr
+# Install Turbo model (fastest, recommended)
+ollama pull Keyvan/german-ocr-turbo
 ```
 
 ### Python API
@@ -67,154 +58,52 @@ ollama pull Keyvan/german-ocr
 ```python
 from german_ocr import GermanOCR
 
-# Initialize (auto-detects best available backend)
+# Initialize with Turbo model (default)
 ocr = GermanOCR()
 
 # Extract text from image
 text = ocr.extract("invoice.png")
 print(text)
 
-# Get structured output
-result = ocr.extract("invoice.png", structured=True)
-print(result["text"])
-print(result["confidence"])
+# Different output formats
+text_md = ocr.extract("invoice.png", output_format="markdown")
+text_json = ocr.extract("invoice.png", output_format="json")
 
-# Batch processing
-results = ocr.extract_batch(["doc1.png", "doc2.png", "doc3.png"])
-for r in results:
-    print(r["text"])
+# List available models
+models = GermanOCR.list_models()
 ```
 
 ### Command Line
 
 ```bash
-# Single image
+# Single image (uses Turbo by default)
 german-ocr invoice.png
 
-# Batch processing
-german-ocr --batch documents/
+# Use specific model
+german-ocr --model german-ocr-turbo invoice.png
 
-# Specify backend
-german-ocr --backend ollama invoice.png
-german-ocr --backend huggingface invoice.png
+# Different output formats
+german-ocr --format json invoice.png
 
-# Output to file
-german-ocr invoice.png -o result.txt
-
-# JSON output
-german-ocr invoice.png --json
-
-# List available backends
-german-ocr --list-backends
+# List available models
+german-ocr --list-models
 ```
-
-## Backends
-
-### Ollama (Recommended)
-
-Fast, local inference using Ollama:
-- No GPU required (works on CPU)
-- ~2-5 seconds per image
-- Privacy-preserving (runs locally)
-
-```python
-ocr = GermanOCR(backend="ollama")
-```
-
-### HuggingFace Transformers
-
-Full model with GPU acceleration:
-- Requires GPU with 8GB+ VRAM
-- Best accuracy
-- Slower startup
-
-```python
-ocr = GermanOCR(backend="huggingface")
-```
-
-## Supported Document Types
-
-| Document Type | German | Status |
-|---------------|--------|--------|
-| Invoices | Rechnungen | Excellent |
-| Receipts | Quittungen | Excellent |
-| Forms | Formulare | Good |
-| Letters | Briefe | Good |
-| Contracts | Vertraege | Good |
-| Any German text | - | Good |
 
 ## Performance Benchmarks
 
-| Backend | Speed (per image) | GPU Required | VRAM | Accuracy |
-|---------|-------------------|--------------|------|----------|
-| Ollama | 2-5s | No | - | 100% |
-| Ollama (GPU) | 1-2s | Optional | 4GB+ | 100% |
-| HuggingFace | 1-3s | Yes | 8GB+ | 100% |
-| HuggingFace (4-bit) | 2-4s | Yes | 4GB+ | 99% |
+Tested on RTX 4060 8GB with 5x warm runs:
 
-## API Reference
+| Model | Size | Time | Accuracy |
+|-------|------|------|----------|
+| **German-OCR Turbo** | 1.9GB | 5.0s | 100% |
+| German-OCR v1 | 3.2GB | 5.5s | 75% |
+| DeepSeek-OCR | 6.7GB | 15.8s | 70% |
+| MiniCPM-V | 5.5GB | 8.9s | 67% |
+| LLaVA 7B | 4.7GB | 3.9s | 0% |
 
-### GermanOCR Class
+**German-OCR Turbo is 3x faster than DeepSeek-OCR!**
 
-```python
-class GermanOCR:
-    def __init__(
-        self,
-        backend: str = "auto",  # "auto", "ollama", "huggingface"
-        model: str = None,      # Custom model name
-        **kwargs
-    )
-
-    def extract(
-        self,
-        image: Union[str, Path, PIL.Image.Image],
-        structured: bool = False
-    ) -> Union[str, dict]
-
-    def extract_batch(
-        self,
-        images: List[Union[str, Path]],
-        structured: bool = False
-    ) -> List[Union[str, dict]]
-
-    @staticmethod
-    def list_backends() -> List[str]
-```
-
-## Configuration
-
-Environment variables:
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OLLAMA_HOST` | Ollama server URL | `http://localhost:11434` |
-| `GERMAN_OCR_MODEL` | Default model to use | Auto-detect |
-| `GERMAN_OCR_BACKEND` | Default backend | Auto-detect |
-
-## Architecture
-
-```
-german-ocr/
-+-- german_ocr/
-|   +-- __init__.py      # Package entry point
-|   +-- ocr.py           # Main GermanOCR class
-|   +-- ollama_backend.py # Ollama integration
-|   +-- hf_backend.py    # HuggingFace integration
-|   +-- cli.py           # Command-line interface
-|   +-- utils.py         # Utility functions
-+-- tests/               # Test suite
-+-- docs/                # Documentation
-+-- pyproject.toml       # Project configuration
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+[View full benchmark results](https://german-ocr.github.io)
 
 ## License
 
@@ -235,9 +124,10 @@ Apache 2.0 - See [LICENSE](LICENSE) for details.
 | Resource | Link |
 |----------|------|
 | PyPI Package | [pypi.org/project/german-ocr](https://pypi.org/project/german-ocr/) |
-| GitHub Repository | [github.com/Keyvanhardani/german-ocr](https://github.com/Keyvanhardani/german-ocr) |
+| Benchmark Results | [german-ocr.github.io](https://german-ocr.github.io) |
+| Ollama Turbo | [ollama.com/Keyvan/german-ocr-turbo](https://ollama.com/Keyvan/german-ocr-turbo) |
+| Ollama Standard | [ollama.com/Keyvan/german-ocr](https://ollama.com/Keyvan/german-ocr) |
 | HuggingFace Model | [huggingface.co/Keyven/german-ocr](https://huggingface.co/Keyven/german-ocr) |
-| Ollama Model | [ollama.com/Keyvan/german-ocr](https://ollama.com/Keyvan/german-ocr) |
 
 ---
 
