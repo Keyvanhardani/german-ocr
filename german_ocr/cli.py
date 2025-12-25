@@ -2,11 +2,12 @@
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import List, Optional
 
-from german_ocr import GermanOCR
+from german_ocr import GermanOCR, CloudClient, CloudError
 
 
 def find_images_in_directory(directory: Path) -> List[Path]:
@@ -213,6 +214,33 @@ Examples:
         help="List available backends and exit",
     )
 
+    # Cloud-Optionen
+    parser.add_argument(
+        "--cloud",
+        action="store_true",
+        help="Use German-OCR Cloud API instead of local processing",
+    )
+
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        help="API key for cloud processing (or set GERMAN_OCR_API_KEY)",
+    )
+
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        choices=["json", "markdown", "text", "n8n"],
+        default="text",
+        help="Output format for cloud processing (default: text)",
+    )
+
+    parser.add_argument(
+        "--prompt",
+        type=str,
+        help="Custom prompt for extraction",
+    )
+
     args = parser.parse_args()
 
     # List backends if requested
@@ -253,7 +281,52 @@ Examples:
     # Prepare output file
     output_file = Path(args.output) if args.output else None
 
-    # Initialize OCR
+    # Cloud processing
+    if args.cloud:
+        try:
+            api_key = args.api_key or os.environ.get("GERMAN_OCR_API_KEY")
+            if not api_key:
+                print("Error: API key required for cloud processing.", file=sys.stderr)
+                print("Set GERMAN_OCR_API_KEY or use --api-key", file=sys.stderr)
+                sys.exit(1)
+
+            client = CloudClient(api_key=api_key)
+
+            if args.verbose:
+                print(f"Using Cloud API: {client.base_url}", file=sys.stderr)
+
+            def on_progress(status):
+                if status.total_pages > 1:
+                    print(
+                        f"  Seite {status.current_page}/{status.total_pages} - {status.phase}",
+                        file=sys.stderr
+                    )
+
+            result = client.analyze(
+                file=input_path,
+                prompt=args.prompt,
+                output_format=args.output_format,
+                on_progress=on_progress if args.verbose else None,
+            )
+
+            output = result.text
+
+            if output_file:
+                output_file.write_text(output, encoding="utf-8")
+                print(f"Results saved to {output_file}")
+            else:
+                print(output)
+
+            sys.exit(0)
+
+        except CloudError as e:
+            print(f"Cloud Error: {e.message}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Initialize local OCR
     try:
         log_level = "DEBUG" if args.verbose else "INFO"
         ocr = GermanOCR(
