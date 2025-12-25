@@ -35,12 +35,16 @@ pip install german-ocr
 
 ### Option 1: Cloud API (Recommended)
 
-No GPU required. Get your API key at [portal.german-ocr.de](https://portal.german-ocr.de)
+No GPU required. Get your API credentials at [portal.german-ocr.de](https://portal.german-ocr.de)
 
 ```python
 from german_ocr import CloudClient
 
-client = CloudClient(api_key="your-api-key")
+# API Key + Secret (Secret is only shown once at creation!)
+client = CloudClient(
+    api_key="gocr_xxxxxxxx",
+    api_secret="your_64_char_secret_here"
+)
 
 # Simple extraction
 result = client.analyze("invoice.pdf")
@@ -77,8 +81,9 @@ print(text)
 ### Cloud
 
 ```bash
-# Set API key
-export GERMAN_OCR_API_KEY="your-api-key"
+# Set API credentials (Secret shown only once at creation!)
+export GERMAN_OCR_API_KEY="gocr_xxxxxxxx"
+export GERMAN_OCR_API_SECRET="your_64_char_secret_here"
 
 # Extract text
 german-ocr --cloud invoice.pdf
@@ -119,7 +124,10 @@ german-ocr --format json invoice.png
 ```python
 from german_ocr import CloudClient
 
-client = CloudClient(api_key="...")
+client = CloudClient(
+    api_key="gocr_xxxxxxxx",
+    api_secret="your_64_char_secret"
+)
 
 def on_progress(status):
     print(f"Page {status.current_page}/{status.total_pages}")
