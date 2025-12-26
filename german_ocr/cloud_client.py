@@ -170,6 +170,7 @@ class CloudClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
         base_url: Optional[str] = None,
         timeout: int = DEFAULT_TIMEOUT,
         max_retries: int = 3,
@@ -178,16 +179,24 @@ class CloudClient:
         Initialisiert den Cloud-Client.
 
         Args:
-            api_key: API-Key für die Authentifizierung.
+            api_key: API-Key (z.B. gocr_xxxxxxxx).
                      Falls nicht angegeben, wird GERMAN_OCR_API_KEY verwendet.
+            api_secret: API-Secret (64 Zeichen).
+                        Falls nicht angegeben, wird GERMAN_OCR_API_SECRET verwendet.
             base_url: Basis-URL der API (Standard: https://api.german-ocr.de)
             timeout: Request-Timeout in Sekunden
             max_retries: Maximale Anzahl automatischer Wiederholungen
         """
         self.api_key = api_key or os.environ.get("GERMAN_OCR_API_KEY")
+        self.api_secret = api_secret or os.environ.get("GERMAN_OCR_API_SECRET")
+
         if not self.api_key:
             raise AuthenticationError(
                 "API-Key erforderlich. Setze GERMAN_OCR_API_KEY oder übergebe api_key."
+            )
+        if not self.api_secret:
+            raise AuthenticationError(
+                "API-Secret erforderlich. Setze GERMAN_OCR_API_SECRET oder übergebe api_secret."
             )
 
         self.base_url = (
@@ -213,13 +222,13 @@ class CloudClient:
     def _headers(self) -> dict:
         """Erstellt die HTTP-Headers."""
         return {
-            "Authorization": f"Bearer {self.api_key}",
-            "User-Agent": "german-ocr-python/0.4.0",
+            "Authorization": f"Bearer {self.api_key}:{self.api_secret}",
+            "User-Agent": "german-ocr-python/0.5.0",
         }
 
     def _request(self, method: str, endpoint: str, **kwargs) -> dict:
         """Führt einen API-Request aus."""
-        url = f"{self.base_url}/api/v1{endpoint}"
+        url = f"{self.base_url}/v1{endpoint}"
 
         if "headers" not in kwargs:
             kwargs["headers"] = {}
@@ -306,6 +315,7 @@ class CloudClient:
         file: Union[str, Path, BinaryIO, bytes],
         prompt: Optional[str] = None,
         output_format: str = "text",
+        provider: str = "cloud_fast",
         filename: Optional[str] = None,
     ) -> JobStatus:
         """
@@ -315,6 +325,7 @@ class CloudClient:
             file: Dateipfad, Datei-Objekt oder Bytes
             prompt: Optionaler Prompt für die Extraktion
             output_format: Ausgabeformat (json, markdown, text, n8n)
+            provider: OCR-Provider (cloud_fast, cloud, auto, local)
             filename: Dateiname (optional)
 
         Returns:
@@ -335,7 +346,7 @@ class CloudClient:
 
         # Request bauen
         files = {"file": (filename, file_data, content_type)}
-        data = {"output_format": output_format}
+        data = {"provider": provider}
         if prompt:
             data["prompt"] = prompt
 
@@ -430,6 +441,7 @@ class CloudClient:
         file: Union[str, Path, BinaryIO, bytes],
         prompt: Optional[str] = None,
         output_format: str = "text",
+        provider: str = "cloud_fast",
         filename: Optional[str] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         max_wait: float = DEFAULT_MAX_WAIT,
@@ -444,6 +456,7 @@ class CloudClient:
             file: Dateipfad, Datei-Objekt oder Bytes
             prompt: Optionaler Prompt für die Extraktion
             output_format: Ausgabeformat (json, markdown, text, n8n)
+            provider: OCR-Provider (cloud_fast, cloud, auto, local)
             filename: Dateiname (optional)
             poll_interval: Abfrageintervall in Sekunden
             max_wait: Maximale Wartezeit in Sekunden
@@ -456,7 +469,7 @@ class CloudClient:
             result = client.analyze(
                 "rechnung.pdf",
                 prompt="Extrahiere Rechnungsnummer und Betrag",
-                output_format="json"
+                provider="cloud_fast"
             )
             print(result.text)
         """
@@ -464,6 +477,7 @@ class CloudClient:
             file=file,
             prompt=prompt,
             output_format=output_format,
+            provider=provider,
             filename=filename,
         )
 
