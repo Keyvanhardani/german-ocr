@@ -4,7 +4,7 @@ German-OCR JSON Extraction Example
 
 Demonstrates structured data extraction from invoices.
 
-Get your API credentials at: https://portal.german-ocr.de
+Get your API credentials at: https://app.german-ocr.de
 """
 
 import os

@@ -4,7 +4,7 @@ German-OCR Batch Processing Example
 
 Demonstrates processing multiple documents efficiently.
 
-Get your API credentials at: https://portal.german-ocr.de
+Get your API credentials at: https://app.german-ocr.de
 """
 
 import os

@@ -4,7 +4,7 @@ German-OCR Basic Usage Example
 
 Demonstrates simple document analysis with the Cloud API.
 
-Get your API credentials at: https://portal.german-ocr.de
+Get your API credentials at: https://app.german-ocr.de
 """
 
 import os

@@ -3,11 +3,11 @@
 German-OCR Model Selection Example
 
 Demonstrates how to select different OCR models:
-- German-OCR Turbo (local) - 0.02 EUR/page, DSGVO-compliant
-- German-OCR Pro (cloud_fast) - 0.05 EUR/page, fast cloud
-- German-OCR Ultra (cloud) - 0.05 EUR/page, maximum precision
+- German-OCR Turbo (local) - DSGVO-compliant, local processing
+- German-OCR Pro (cloud_fast) - Fast cloud processing
+- German-OCR Ultra (cloud) - Maximum precision
 
-Get your API credentials at: https://portal.german-ocr.de
+Get your API credentials at: https://app.german-ocr.de
 """
 
 import os
@@ -29,7 +29,6 @@ def main():
     # Best for: Privacy-sensitive documents
     print("=== German-OCR Turbo (local) ===")
     result = client.analyze(document, model="local")
-    print(f"Price: 0.02 EUR/page")
     print(f"Processing: {result.processing_time_ms}ms")
     print(f"Text: {result.text[:100]}...\n")
 
@@ -37,7 +36,6 @@ def main():
     # Best for: General business documents
     print("=== German-OCR Pro (cloud_fast) ===")
     result = client.analyze(document, model="cloud_fast")
-    print(f"Price: 0.05 EUR/page")
     print(f"Processing: {result.processing_time_ms}ms")
     print(f"Text: {result.text[:100]}...\n")
 
@@ -45,7 +43,6 @@ def main():
     # Best for: Complex documents with tables, forms
     print("=== German-OCR Ultra (cloud) ===")
     result = client.analyze(document, model="cloud")
-    print(f"Price: 0.05 EUR/page")
     print(f"Processing: {result.processing_time_ms}ms")
     print(f"Text: {result.text[:100]}...\n")
 

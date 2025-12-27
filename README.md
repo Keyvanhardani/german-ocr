@@ -10,7 +10,7 @@
   <a href="https://pypi.org/project/german-ocr/"><img src="https://badge.fury.io/py/german-ocr.svg" alt="PyPI version"></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
-  <a href="https://portal.german-ocr.de"><img src="https://img.shields.io/badge/Cloud-API-green" alt="Cloud API"></a>
+  <a href="https://app.german-ocr.de"><img src="https://img.shields.io/badge/Cloud-API-green" alt="Cloud API"></a>
 </p>
 
 ---
@@ -35,7 +35,7 @@ pip install german-ocr
 
 ### Option 1: Cloud API (Recommended)
 
-No GPU required. Get your API credentials at [portal.german-ocr.de](https://portal.german-ocr.de)
+No GPU required. Get your API credentials at [app.german-ocr.de](https://app.german-ocr.de)
 
 ```python
 from german_ocr import CloudClient
@@ -78,11 +78,11 @@ print(text)
 
 ## Cloud Models
 
-| Model | Parameter | Price | Best For |
-|-------|-----------|-------|----------|
-| **German-OCR Turbo** | `local` | 0,02 EUR | DSGVO-konform, lokale Verarbeitung in DE |
-| **German-OCR Pro** | `cloud_fast` | 0,05 EUR | Balance aus Speed & Qualitat |
-| **German-OCR Ultra** | `cloud` | 0,05 EUR | Maximale Prazision, Strukturerkennung |
+| Model | Parameter | Best For |
+|-------|-----------|----------|
+| **German-OCR Turbo** | `local` | DSGVO-konform, lokale Verarbeitung in DE |
+| **German-OCR Pro** | `cloud_fast` | Balance aus Speed & Qualitat |
+| **German-OCR Ultra** | `cloud` | Maximale Prazision, Strukturerkennung |
 
 ### Model Selection
 
@@ -94,13 +94,13 @@ client = CloudClient(
     api_secret="your_64_char_secret_here"
 )
 
-# German-OCR Turbo (0,02 EUR/Seite) - Lokal, DSGVO-konform
+# German-OCR Turbo - Lokal, DSGVO-konform
 result = client.analyze("dokument.pdf", model="local")
 
-# German-OCR Pro (0,05 EUR/Seite) - Schnelle Cloud (Standard)
+# German-OCR Pro - Schnelle Cloud (Standard)
 result = client.analyze("dokument.pdf", model="cloud_fast")
 
-# German-OCR Ultra (0,05 EUR/Seite) - Maximale Prazision
+# German-OCR Ultra - Maximale Prazision
 result = client.analyze("dokument.pdf", model="cloud")
 ```
 
@@ -208,13 +208,7 @@ print(f"Usage: {usage}")
 
 ## Pricing
 
-| Model | Price per Page |
-|-------|----------------|
-| German-OCR Turbo | 0,02 EUR |
-| German-OCR Pro | 0,05 EUR |
-| German-OCR Ultra | 0,05 EUR |
-
-Get started at [portal.german-ocr.de](https://portal.german-ocr.de)
+See current pricing at [app.german-ocr.de](https://app.german-ocr.de)
 
 ## License
 

@@ -312,9 +312,9 @@ class CloudClient:
 
     # Verfügbare Modelle
     MODELS = {
-        "local": "German-OCR Turbo (0,02€/Seite) - Lokal, DSGVO-konform",
-        "cloud_fast": "German-OCR Pro (0,05€/Seite) - Schnelle Cloud",
-        "cloud": "German-OCR Ultra (0,05€/Seite) - Maximale Präzision",
+        "local": "German-OCR Turbo - Lokal, DSGVO-konform",
+        "cloud_fast": "German-OCR Pro - Schnelle Cloud",
+        "cloud": "German-OCR Ultra - Maximale Präzision",
     }
 
     def submit(
@@ -335,9 +335,9 @@ class CloudClient:
             prompt: Optionaler Prompt für die Extraktion
             output_format: Ausgabeformat (json, markdown, text, n8n)
             model: OCR-Modell
-                   - "local": German-OCR Turbo (0,02€) - Lokal, DSGVO
-                   - "cloud_fast": German-OCR Pro (0,05€) - Schnelle Cloud
-                   - "cloud": German-OCR Ultra (0,05€) - Maximale Präzision
+                   - "local": German-OCR Turbo - Lokal, DSGVO
+                   - "cloud_fast": German-OCR Pro - Schnelle Cloud
+                   - "cloud": German-OCR Ultra - Maximale Präzision
             filename: Dateiname (optional)
             provider: DEPRECATED - Verwende "model" stattdessen
 
@@ -484,9 +484,9 @@ class CloudClient:
             prompt: Optionaler Prompt für die Extraktion
             output_format: Ausgabeformat (json, markdown, text, n8n)
             model: OCR-Modell
-                   - "local": German-OCR Turbo (0,02€) - Lokal, DSGVO
-                   - "cloud_fast": German-OCR Pro (0,05€) - Schnelle Cloud
-                   - "cloud": German-OCR Ultra (0,05€) - Maximale Präzision
+                   - "local": German-OCR Turbo - Lokal, DSGVO
+                   - "cloud_fast": German-OCR Pro - Schnelle Cloud
+                   - "cloud": German-OCR Ultra - Maximale Präzision
             filename: Dateiname (optional)
             poll_interval: Abfrageintervall in Sekunden
             max_wait: Maximale Wartezeit in Sekunden
