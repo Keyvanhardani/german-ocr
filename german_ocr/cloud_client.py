@@ -310,13 +310,22 @@ class CloudClient:
 
         return filename, file_data, content_type
 
+    # Verfügbare Modelle
+    MODELS = {
+        "local": "German-OCR Turbo (0,02€/Seite) - Lokal, DSGVO-konform",
+        "cloud_fast": "German-OCR Pro (0,05€/Seite) - Schnelle Cloud",
+        "cloud": "German-OCR Ultra (0,05€/Seite) - Maximale Präzision",
+    }
+
     def submit(
         self,
         file: Union[str, Path, BinaryIO, bytes],
         prompt: Optional[str] = None,
         output_format: str = "text",
-        provider: str = "cloud_fast",
+        model: str = "cloud_fast",
         filename: Optional[str] = None,
+        # Backward compatibility
+        provider: Optional[str] = None,
     ) -> JobStatus:
         """
         Sendet ein Dokument zur Verarbeitung.
@@ -325,12 +334,28 @@ class CloudClient:
             file: Dateipfad, Datei-Objekt oder Bytes
             prompt: Optionaler Prompt für die Extraktion
             output_format: Ausgabeformat (json, markdown, text, n8n)
-            provider: OCR-Provider (cloud_fast, cloud, auto, local)
+            model: OCR-Modell
+                   - "local": German-OCR Turbo (0,02€) - Lokal, DSGVO
+                   - "cloud_fast": German-OCR Pro (0,05€) - Schnelle Cloud
+                   - "cloud": German-OCR Ultra (0,05€) - Maximale Präzision
             filename: Dateiname (optional)
+            provider: DEPRECATED - Verwende "model" stattdessen
 
         Returns:
             JobStatus mit job_id
         """
+        # Backward compatibility: provider -> model
+        if provider is not None:
+            logger.warning("Parameter 'provider' ist veraltet. Bitte 'model' verwenden.")
+            model = provider
+
+        # Modell validieren
+        if model not in self.MODELS:
+            raise ValueError(
+                f"Ungültiges Modell: {model}. "
+                f"Erlaubt: {', '.join(self.MODELS.keys())}"
+            )
+
         # Output-Format validieren
         output_format = output_format.lower()
         if output_format == "md":
@@ -346,7 +371,7 @@ class CloudClient:
 
         # Request bauen
         files = {"file": (filename, file_data, content_type)}
-        data = {"provider": provider}
+        data = {"model": model}
         if prompt:
             data["prompt"] = prompt
 
@@ -441,11 +466,13 @@ class CloudClient:
         file: Union[str, Path, BinaryIO, bytes],
         prompt: Optional[str] = None,
         output_format: str = "text",
-        provider: str = "cloud_fast",
+        model: str = "cloud_fast",
         filename: Optional[str] = None,
         poll_interval: float = DEFAULT_POLL_INTERVAL,
         max_wait: float = DEFAULT_MAX_WAIT,
         on_progress: Optional[Callable[[JobStatus], None]] = None,
+        # Backward compatibility
+        provider: Optional[str] = None,
     ) -> CloudResult:
         """
         Analysiert ein Dokument und wartet auf das Ergebnis.
@@ -456,11 +483,15 @@ class CloudClient:
             file: Dateipfad, Datei-Objekt oder Bytes
             prompt: Optionaler Prompt für die Extraktion
             output_format: Ausgabeformat (json, markdown, text, n8n)
-            provider: OCR-Provider (cloud_fast, cloud, auto, local)
+            model: OCR-Modell
+                   - "local": German-OCR Turbo (0,02€) - Lokal, DSGVO
+                   - "cloud_fast": German-OCR Pro (0,05€) - Schnelle Cloud
+                   - "cloud": German-OCR Ultra (0,05€) - Maximale Präzision
             filename: Dateiname (optional)
             poll_interval: Abfrageintervall in Sekunden
             max_wait: Maximale Wartezeit in Sekunden
             on_progress: Callback für Status-Updates
+            provider: DEPRECATED - Verwende "model" stattdessen
 
         Returns:
             CloudResult mit dem Ergebnis
@@ -469,15 +500,19 @@ class CloudClient:
             result = client.analyze(
                 "rechnung.pdf",
                 prompt="Extrahiere Rechnungsnummer und Betrag",
-                provider="cloud_fast"
+                model="cloud_fast"  # German-OCR Pro
             )
             print(result.text)
         """
+        # Backward compatibility
+        if provider is not None:
+            model = provider
+
         job = self.submit(
             file=file,
             prompt=prompt,
             output_format=output_format,
-            provider=provider,
+            model=model,
             filename=filename,
         )
 

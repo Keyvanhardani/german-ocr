@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "german-ocr"
-version = "0.4.0"
-description = "High-performance German document OCR using fine-tuned Qwen2-VL and Qwen3-VL"
+version = "0.5.0"
+description = "High-performance German document OCR - Cloud API with Turbo, Pro and Ultra models"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
@@ -20,9 +20,9 @@ keywords = [
     "document",
     "invoice",
     "text-extraction",
-    "vision-language-model",
-    "qwen2-vl",
-    "ollama"
+    "dsgvo",
+    "cloud-api",
+    "document-ai"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

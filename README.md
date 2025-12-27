@@ -76,6 +76,34 @@ text = ocr.extract("invoice.png")
 print(text)
 ```
 
+## Cloud Models
+
+| Model | Parameter | Price | Best For |
+|-------|-----------|-------|----------|
+| **German-OCR Turbo** | `local` | 0,02 EUR | DSGVO-konform, lokale Verarbeitung in DE |
+| **German-OCR Pro** | `cloud_fast` | 0,05 EUR | Balance aus Speed & Qualitat |
+| **German-OCR Ultra** | `cloud` | 0,05 EUR | Maximale Prazision, Strukturerkennung |
+
+### Model Selection
+
+```python
+from german_ocr import CloudClient
+
+client = CloudClient(
+    api_key="gocr_xxxxxxxx",
+    api_secret="your_64_char_secret_here"
+)
+
+# German-OCR Turbo (0,02 EUR/Seite) - Lokal, DSGVO-konform
+result = client.analyze("dokument.pdf", model="local")
+
+# German-OCR Pro (0,05 EUR/Seite) - Schnelle Cloud (Standard)
+result = client.analyze("dokument.pdf", model="cloud_fast")
+
+# German-OCR Ultra (0,05 EUR/Seite) - Maximale Prazision
+result = client.analyze("dokument.pdf", model="cloud")
+```
+
 ## CLI Usage
 
 ### Cloud
@@ -85,11 +113,14 @@ print(text)
 export GERMAN_OCR_API_KEY="gocr_xxxxxxxx"
 export GERMAN_OCR_API_SECRET="your_64_char_secret_here"
 
-# Extract text
+# Extract text (uses German-OCR Pro by default)
 german-ocr --cloud invoice.pdf
 
-# JSON output
-german-ocr --cloud --output-format json invoice.pdf
+# Use German-OCR Turbo (DSGVO)
+german-ocr --cloud --model local invoice.pdf
+
+# JSON output with German-OCR Ultra
+german-ocr --cloud --model cloud --output-format json invoice.pdf
 
 # With custom prompt
 german-ocr --cloud --prompt "Extrahiere alle Betraege" invoice.pdf
@@ -141,8 +172,8 @@ result = client.analyze(
 ### Async Processing
 
 ```python
-# Submit job
-job = client.submit("document.pdf", output_format="json")
+# Submit job with German-OCR Pro
+job = client.submit("document.pdf", model="cloud_fast", output_format="json")
 print(f"Job ID: {job.job_id}")
 
 # Check status
@@ -177,12 +208,11 @@ print(f"Usage: {usage}")
 
 ## Pricing
 
-| Tier | Pages/Month | Price |
-|------|-------------|-------|
-| Developer | 50 | Free |
-| Startup | 1,000 | 29 EUR |
-| Business | 5,000 | 99 EUR |
-| Enterprise | 30,000+ | Contact |
+| Model | Price per Page |
+|-------|----------------|
+| German-OCR Turbo | 0,02 EUR |
+| German-OCR Pro | 0,05 EUR |
+| German-OCR Ultra | 0,05 EUR |
 
 Get started at [portal.german-ocr.de](https://portal.german-ocr.de)
 
