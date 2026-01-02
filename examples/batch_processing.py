@@ -39,7 +39,7 @@ def main():
         try:
             result = client.analyze(
                 str(pdf_file),
-                model="cloud_fast",  # German-OCR Pro for good speed/quality
+                model="german-ocr-pro",  # Fast and reliable
                 output_format="json",
             )
             results.append({

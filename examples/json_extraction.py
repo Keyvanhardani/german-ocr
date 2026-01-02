@@ -24,7 +24,7 @@ def main():
     # Extract structured invoice data
     result = client.analyze(
         "invoice.pdf",
-        model="cloud",  # German-OCR Ultra for best structure recognition
+        model="german-ocr-ultra",  # Maximum precision for structure recognition
         prompt="Extrahiere als JSON: rechnungsnummer, datum, absender, empfaenger, positionen, netto, mwst, brutto",
         output_format="json",
     )

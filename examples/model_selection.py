@@ -3,9 +3,9 @@
 German-OCR Model Selection Example
 
 Demonstrates how to select different OCR models:
-- German-OCR Turbo (local) - DSGVO-compliant, local processing
-- German-OCR Pro (cloud_fast) - Fast cloud processing
-- German-OCR Ultra (cloud) - Maximum precision
+- german-ocr - DSGVO-compliant, local processing
+- german-ocr-pro - Fast cloud processing
+- german-ocr-ultra - Maximum precision
 
 Get your API credentials at: https://app.german-ocr.de
 """
@@ -27,22 +27,22 @@ def main():
 
     # German-OCR Turbo - Local processing, DSGVO-compliant
     # Best for: Privacy-sensitive documents
-    print("=== German-OCR Turbo (local) ===")
-    result = client.analyze(document, model="local")
+    print("=== German-OCR Turbo ===")
+    result = client.analyze(document, model="german-ocr")
     print(f"Processing: {result.processing_time_ms}ms")
     print(f"Text: {result.text[:100]}...\n")
 
     # German-OCR Pro - Fast cloud processing (default)
     # Best for: General business documents
-    print("=== German-OCR Pro (cloud_fast) ===")
-    result = client.analyze(document, model="cloud_fast")
+    print("=== German-OCR Pro ===")
+    result = client.analyze(document, model="german-ocr-pro")
     print(f"Processing: {result.processing_time_ms}ms")
     print(f"Text: {result.text[:100]}...\n")
 
     # German-OCR Ultra - Maximum precision
     # Best for: Complex documents with tables, forms
-    print("=== German-OCR Ultra (cloud) ===")
-    result = client.analyze(document, model="cloud")
+    print("=== German-OCR Ultra ===")
+    result = client.analyze(document, model="german-ocr-ultra")
     print(f"Processing: {result.processing_time_ms}ms")
     print(f"Text: {result.text[:100]}...\n")
 
