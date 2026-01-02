@@ -1,0 +1,49 @@
+{
+  "name": "german-ocr",
+  "version": "0.5.1",
+  "description": "High-performance German document OCR - Local & Cloud API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "node test/test.js"
+  },
+  "keywords": [
+    "ocr",
+    "german",
+    "document",
+    "pdf",
+    "invoice",
+    "text-extraction",
+    "vision",
+    "ai",
+    "machine-learning"
+  ],
+  "author": "Keyvan.ai",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Keyvanhardani/german-ocr.git"
+  },
+  "homepage": "https://german-ocr.de",
+  "bugs": {
+    "url": "https://github.com/Keyvanhardani/german-ocr/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/node-fetch": "^2.6.0",
+    "typescript": "^5.0.0"
+  }
+}
