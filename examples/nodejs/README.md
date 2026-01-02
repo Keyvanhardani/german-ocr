@@ -32,8 +32,8 @@ node simple.js rechnung.jpg
 # Mit Prompt für strukturierte Ausgabe
 node simple.js rechnung.pdf "Extrahiere Rechnungsnummer und Datum"
 
-# Mit spezifischem Provider
-node simple.js rechnung.jpg "" cloud
+# Mit spezifischem Modell
+node simple.js rechnung.jpg "" german-ocr-ultra
 ```
 
 **Features:**
@@ -47,7 +47,7 @@ node simple.js rechnung.jpg "" cloud
 ```
 📤 Sende Dokument an German-OCR API...
    Datei: rechnung.jpg
-   Provider: cloud_fast
+   Modell: german-ocr-pro
 
 ✅ Erfolgreich verarbeitet!
 ⏱️  Antwortzeit: 1234ms
@@ -56,7 +56,7 @@ node simple.js rechnung.jpg "" cloud
 ────────────────────────────────────────────────────────
 {
   "text": "Rechnung\nRechnungsnummer: 2025-001234...",
-  "provider_used": "cloud",
+  "model_used": "German-OCR Pro",
   "processing_time_ms": 1200
 }
 ────────────────────────────────────────────────────────
@@ -89,7 +89,7 @@ node batch.js docs/*.jpg
 ```
 🚀 Starte Batch-Verarbeitung...
    Dokumente: 3
-   Provider: cloud_fast (optimiert für Geschwindigkeit)
+   Modell: german-ocr-pro (schnell und zuverlässig)
 
 📊 Batch-Ergebnisse:
 ══════════════════════════════════════════════════════════════════
@@ -120,8 +120,8 @@ Die Zugangsdaten sind bereits in den Skripten hinterlegt:
 ```javascript
 const API_CONFIG = {
   endpoint: 'https://api.german-ocr.de/v1/analyze',
-  apiKey: 'gocr_079a85fb',
-  apiSecret: '7c3fafb5efedcad69ba991ca1e96bce7f4929d769b4f1349fa0a28e98f4a462c'
+  apiKey: process.env.GERMAN_OCR_API_KEY || 'YOUR_API_KEY',
+  apiSecret: process.env.GERMAN_OCR_API_SECRET || 'YOUR_API_SECRET'
 };
 ```
 
@@ -159,11 +159,11 @@ async function myApp() {
     const result = await analyzeDocument(
       'dokument.pdf',
       'Extrahiere alle Rechnungspositionen',
-      'cloud'
+      'german-ocr-ultra'
     );
 
     console.log('OCR-Text:', result.text);
-    console.log('Provider:', result.provider_used);
+    console.log('Modell:', result.model_used);
   } catch (error) {
     console.error('Fehler:', error.message);
   }
@@ -216,7 +216,7 @@ Beide Skripte enthalten umfassende Fehlerbehandlung:
 ## Performance-Tipps
 
 1. **Batch-Verarbeitung:** Für mehrere Dateien immer `batch.js` verwenden
-2. **Provider-Wahl:** `cloud_fast` für maximale Geschwindigkeit
+2. **Modell-Wahl:** `german-ocr-pro` für beste Balance zwischen Geschwindigkeit und Qualität
 3. **Parallele Requests:** Maximal 10-20 parallele Requests empfohlen
 4. **Timeout:** Standard 60s, bei großen PDFs ggf. erhöhen
 

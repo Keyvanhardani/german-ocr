@@ -58,8 +58,8 @@ php simple_curl.php rechnung.jpg
 # Mit Prompt für strukturierte Ausgabe
 php simple_curl.php rechnung.pdf "Extrahiere Rechnungsnummer und Datum"
 
-# Mit spezifischem Provider
-php simple_curl.php rechnung.jpg "" cloud
+# Mit spezifischem Modell
+php simple_curl.php rechnung.jpg "" german-ocr-ultra
 ```
 
 **Features:**
@@ -75,7 +75,7 @@ php simple_curl.php rechnung.jpg "" cloud
 ```
 📤 Sende Dokument an German-OCR API...
    Datei: rechnung.jpg
-   Provider: cloud_fast
+   Modell: german-ocr-pro
 
 ✅ Erfolgreich verarbeitet!
 ⏱️  Antwortzeit: 1234ms
@@ -84,7 +84,7 @@ php simple_curl.php rechnung.jpg "" cloud
 ────────────────────────────────────────────────────────
 {
     "text": "Rechnung\nRechnungsnummer: 2025-001234...",
-    "provider_used": "cloud",
+    "model_used": "German-OCR Pro",
     "processing_time_ms": 1200
 }
 ────────────────────────────────────────────────────────
@@ -121,7 +121,7 @@ php guzzle_demo.php rechnung1.jpg rechnung2.pdf rechnung3.jpg
 ```
 🚀 Starte Batch-Verarbeitung mit Guzzle (async)...
    Dokumente: 3
-   Provider: cloud_fast (optimiert für Geschwindigkeit)
+   Modell: german-ocr-pro (schnell und zuverlässig)
 
 📊 Batch-Ergebnisse:
 ══════════════════════════════════════════════════════════════════
@@ -150,8 +150,8 @@ Die Zugangsdaten sind bereits in den Skripten hinterlegt:
 
 ```php
 define('API_ENDPOINT', 'https://api.german-ocr.de/v1/analyze');
-define('API_KEY', 'gocr_079a85fb');
-define('API_SECRET', '7c3fafb5efedcad69ba991ca1e96bce7f4929d769b4f1349fa0a28e98f4a462c');
+define('API_KEY', getenv('GERMAN_OCR_API_KEY') ?: 'YOUR_API_KEY');
+define('API_SECRET', getenv('GERMAN_OCR_API_SECRET') ?: 'YOUR_API_SECRET');
 ```
 
 **Für produktiven Einsatz:** Credentials aus Umgebungsvariablen laden:
@@ -168,7 +168,7 @@ define('API_KEY', $_ENV['GERMAN_OCR_API_KEY'] ?? null);
 
 ---
 
-## Provider-Optionen
+## Modell-Optionen
 
 | Modell | Beschreibung | Geschwindigkeit | Qualität |
 |--------|--------------|-----------------|----------|
@@ -195,7 +195,7 @@ function german_ocr_process_attachment($attachment_id) {
 
         // OCR-Text als Post-Meta speichern
         update_post_meta($attachment_id, 'ocr_text', $result['text']);
-        update_post_meta($attachment_id, 'ocr_provider', $result['provider_used']);
+        update_post_meta($attachment_id, 'ocr_model', $result['model_used']);
 
         return $result;
 
@@ -230,7 +230,7 @@ class GermanOcrService
         ]);
     }
 
-    public function analyze($filePath, $prompt = null, $provider = 'cloud_fast')
+    public function analyze($filePath, $prompt = null, $model = 'german-ocr-pro')
     {
         $multipart = [
             [
@@ -239,8 +239,8 @@ class GermanOcrService
                 'filename' => basename($filePath)
             ],
             [
-                'name' => 'provider',
-                'contents' => $provider
+                'name' => 'model',
+                'contents' => $model
             ]
         ];
 
@@ -331,11 +331,11 @@ if (!isset($_FILES['file'])) {
 
 $file = $_FILES['file'];
 $prompt = $_POST['prompt'] ?? null;
-$provider = $_POST['provider'] ?? 'cloud_fast';
+$model = $_POST['model'] ?? 'german-ocr-pro';
 
 try {
     // Temporäre Datei verwenden
-    $result = analyzeDocument($file['tmp_name'], $prompt, $provider);
+    $result = analyzeDocument($file['tmp_name'], $prompt, $model);
     echo json_encode($result);
 
 } catch (Exception $e) {
@@ -398,7 +398,7 @@ try {
 
 1. **Guzzle für Batch:** Bei mehreren Dateien asynchrone Guzzle-Requests verwenden
 2. **Connection Pooling:** Guzzle Client wiederverwenden
-3. **Provider-Wahl:** `cloud_fast` für maximale Geschwindigkeit
+3. **Modell-Wahl:** `german-ocr-pro` für beste Balance zwischen Geschwindigkeit und Qualität
 4. **Timeout anpassen:** Bei großen PDFs Timeout erhöhen
 5. **Memory Limit:** Bei großen Dateien `memory_limit` erhöhen
 

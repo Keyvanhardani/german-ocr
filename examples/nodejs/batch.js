@@ -19,8 +19,8 @@ const fetch = require('node-fetch');
 // API-Konfiguration
 const API_CONFIG = {
   endpoint: 'https://api.german-ocr.de/v1/analyze',
-  apiKey: 'gocr_079a85fb',
-  apiSecret: '7c3fafb5efedcad69ba991ca1e96bce7f4929d769b4f1349fa0a28e98f4a462c'
+  apiKey: process.env.GERMAN_OCR_API_KEY || 'YOUR_API_KEY',
+  apiSecret: process.env.GERMAN_OCR_API_SECRET || 'YOUR_API_SECRET'
 };
 
 /**
