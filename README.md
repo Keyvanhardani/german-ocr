@@ -8,8 +8,9 @@
 
 <p align="center">
   <a href="https://pypi.org/project/german-ocr/"><img src="https://badge.fury.io/py/german-ocr.svg" alt="PyPI version"></a>
+  <a href="https://www.npmjs.com/package/german-ocr"><img src="https://badge.fury.io/js/german-ocr.svg" alt="npm version"></a>
+  <a href="https://packagist.org/packages/keyvan/german-ocr"><img src="https://img.shields.io/packagist/v/keyvan/german-ocr" alt="Packagist"></a>
   <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"></a>
-  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" alt="Python 3.9+"></a>
   <a href="https://app.german-ocr.de"><img src="https://img.shields.io/badge/Cloud-API-green" alt="Cloud API"></a>
 </p>
 
@@ -27,9 +28,22 @@
 
 ## Installation
 
+### Python
 ```bash
 pip install german-ocr
 ```
+
+### Node.js
+```bash
+npm install german-ocr
+```
+
+### PHP
+```bash
+composer require keyvan/german-ocr
+```
+
+---
 
 ## Quick Start
 
@@ -57,6 +71,39 @@ result = client.analyze(
     output_format="json"
 )
 print(result.text)
+```
+
+### Node.js
+
+```javascript
+const { GermanOCR } = require('german-ocr');
+
+const client = new GermanOCR(
+    process.env.GERMAN_OCR_API_KEY,
+    process.env.GERMAN_OCR_API_SECRET
+);
+
+const result = await client.analyze('invoice.pdf', {
+    model: 'german-ocr-ultra'
+});
+console.log(result.text);
+```
+
+### PHP
+
+```php
+<?php
+use GermanOCR\GermanOCR;
+
+$client = new GermanOCR(
+    getenv('GERMAN_OCR_API_KEY'),
+    getenv('GERMAN_OCR_API_SECRET')
+);
+
+$result = $client->analyze('invoice.pdf', [
+    'model' => GermanOCR::MODEL_ULTRA
+]);
+echo $result['text'];
 ```
 
 ### Option 2: Local (Ollama)
