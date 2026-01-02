@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo-german-ocr.png" alt="German-OCR Logo" width="450"/>
+  <img src="docs/icon.png" alt="German-OCR Logo" width="120"/>
 </p>
 
 <p align="center">
@@ -80,9 +80,9 @@ print(text)
 
 | Model | Parameter | Best For |
 |-------|-----------|----------|
-| **German-OCR Turbo** | `local` | DSGVO-konform, lokale Verarbeitung in DE |
-| **German-OCR Pro** | `cloud_fast` | Balance aus Speed & Qualitat |
-| **German-OCR Ultra** | `cloud` | Maximale Prazision, Strukturerkennung |
+| **German-OCR Ultra** | `german-ocr-ultra` | Maximale Präzision, Strukturerkennung |
+| **German-OCR Pro** | `german-ocr-pro` | Balance aus Speed & Qualität |
+| **German-OCR Turbo** | `german-ocr` | DSGVO-konform, lokale Verarbeitung in DE |
 
 ### Model Selection
 
@@ -94,14 +94,14 @@ client = CloudClient(
     api_secret="your_64_char_secret_here"
 )
 
-# German-OCR Turbo - Lokal, DSGVO-konform
-result = client.analyze("dokument.pdf", model="local")
+# German-OCR Ultra - Maximale Präzision
+result = client.analyze("dokument.pdf", model="german-ocr-ultra")
 
 # German-OCR Pro - Schnelle Cloud (Standard)
-result = client.analyze("dokument.pdf", model="cloud_fast")
+result = client.analyze("dokument.pdf", model="german-ocr-pro")
 
-# German-OCR Ultra - Maximale Prazision
-result = client.analyze("dokument.pdf", model="cloud")
+# German-OCR Turbo - Lokal, DSGVO-konform
+result = client.analyze("dokument.pdf", model="german-ocr")
 ```
 
 ## CLI Usage
@@ -116,11 +116,11 @@ export GERMAN_OCR_API_SECRET="your_64_char_secret_here"
 # Extract text (uses German-OCR Pro by default)
 german-ocr --cloud invoice.pdf
 
-# Use German-OCR Turbo (DSGVO)
-german-ocr --cloud --model local invoice.pdf
+# Use German-OCR Turbo (DSGVO-konform, lokal)
+german-ocr --cloud --model german-ocr invoice.pdf
 
 # JSON output with German-OCR Ultra
-german-ocr --cloud --model cloud --output-format json invoice.pdf
+german-ocr --cloud --model german-ocr-ultra --output-format json invoice.pdf
 
 # With custom prompt
 german-ocr --cloud --prompt "Extrahiere alle Betraege" invoice.pdf
@@ -173,7 +173,7 @@ result = client.analyze(
 
 ```python
 # Submit job with German-OCR Pro
-job = client.submit("document.pdf", model="cloud_fast", output_format="json")
+job = client.submit("document.pdf", model="german-ocr-pro", output_format="json")
 print(f"Job ID: {job.job_id}")
 
 # Check status
