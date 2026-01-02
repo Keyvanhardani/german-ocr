@@ -65,7 +65,8 @@ async function processDocument(filePath, index) {
 
     const responseTime = Date.now() - startTime;
 
-    if (!response.ok) {
+    // 200 = direktes Ergebnis, 202 = Job in Warteschlange
+    if (!response.ok && response.status !== 202) {
       const errorText = await response.text();
       return {
         index,
@@ -84,6 +85,8 @@ async function processDocument(filePath, index) {
       success: true,
       result,
       responseTime,
+      jobId: result.job_id || null,
+      model: result.model || null,
       textLength: result.text ? result.text.length : 0
     };
 

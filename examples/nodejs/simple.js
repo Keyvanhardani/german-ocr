@@ -71,20 +71,32 @@ async function analyzeDocument(filePath, prompt = null, model = 'german-ocr-pro'
 
     const responseTime = Date.now() - startTime;
 
-    if (!response.ok) {
+    // 200 = direktes Ergebnis, 202 = Job in Warteschlange
+    if (!response.ok && response.status !== 202) {
       const errorText = await response.text();
       throw new Error(`API-Fehler (${response.status}): ${errorText}`);
     }
 
     const result = await response.json();
 
-    console.log('✅ Erfolgreich verarbeitet!');
-    console.log(`⏱️  Antwortzeit: ${responseTime}ms`);
-    console.log('');
-    console.log('📄 Ergebnis:');
-    console.log('─'.repeat(60));
-    console.log(JSON.stringify(result, null, 2));
-    console.log('─'.repeat(60));
+    if (response.status === 202) {
+      // Async Job
+      console.log('✅ Job erfolgreich gestartet!');
+      console.log(`⏱️  Antwortzeit: ${responseTime}ms`);
+      console.log('');
+      console.log(`📋 Job-ID: ${result.job_id}`);
+      console.log(`🤖 Modell: ${result.model}`);
+      console.log(`📊 Status: ${result.status}`);
+    } else {
+      // Direktes Ergebnis
+      console.log('✅ Erfolgreich verarbeitet!');
+      console.log(`⏱️  Antwortzeit: ${responseTime}ms`);
+      console.log('');
+      console.log('📄 Ergebnis:');
+      console.log('─'.repeat(60));
+      console.log(JSON.stringify(result, null, 2));
+      console.log('─'.repeat(60));
+    }
 
     return result;
 

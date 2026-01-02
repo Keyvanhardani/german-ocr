@@ -93,7 +93,8 @@ function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro') {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($httpCode !== 200) {
+    // 200 = direktes Ergebnis, 202 = Job in Warteschlange
+    if ($httpCode !== 200 && $httpCode !== 202) {
         throw new Exception("API-Fehler ($httpCode): $response");
     }
 
@@ -105,14 +106,25 @@ function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro') {
     }
 
     // Ergebnis ausgeben
-    echo "✅ Erfolgreich verarbeitet!\n";
-    echo "⏱️  Antwortzeit: {$responseTime}ms\n";
-    echo "\n";
-    echo "📄 Ergebnis:\n";
-    echo str_repeat('─', 60) . "\n";
-    echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    echo "\n";
-    echo str_repeat('─', 60) . "\n";
+    if ($httpCode === 202) {
+        // Async Job
+        echo "✅ Job erfolgreich gestartet!\n";
+        echo "⏱️  Antwortzeit: {$responseTime}ms\n";
+        echo "\n";
+        echo "📋 Job-ID: " . ($result['job_id'] ?? 'N/A') . "\n";
+        echo "🤖 Modell: " . ($result['model'] ?? 'N/A') . "\n";
+        echo "📊 Status: " . ($result['status'] ?? 'N/A') . "\n";
+    } else {
+        // Direktes Ergebnis
+        echo "✅ Erfolgreich verarbeitet!\n";
+        echo "⏱️  Antwortzeit: {$responseTime}ms\n";
+        echo "\n";
+        echo "📄 Ergebnis:\n";
+        echo str_repeat('─', 60) . "\n";
+        echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo "\n";
+        echo str_repeat('─', 60) . "\n";
+    }
 
     return $result;
 }
