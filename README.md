@@ -287,8 +287,8 @@ print(f"Usage: {usage}")
 
 | Model | Size | Speed | Best For |
 |-------|------|-------|----------|
-| [german-ocr-2b](https://huggingface.co/Keyvan/german-ocr-2b-gguf) | 1.5 GB | ~5s (GPU) / ~25s (CPU) | Edge/Embedded |
-| [german-ocr-turbo](https://huggingface.co/Keyvan/german-ocr-turbo-gguf) | 1.9 GB | ~5s (GPU) / ~20s (CPU) | Best accuracy |
+| [german-ocr-2b](https://huggingface.co/Keyven/german-ocr-2b-gguf) | 1.5 GB | ~5s (GPU) / ~25s (CPU) | Edge/Embedded |
+| [german-ocr-turbo](https://huggingface.co/Keyven/german-ocr-turbo-gguf) | 1.9 GB | ~5s (GPU) / ~20s (CPU) | Best accuracy |
 
 **Hardware Support:**
 - CUDA (NVIDIA GPUs)
