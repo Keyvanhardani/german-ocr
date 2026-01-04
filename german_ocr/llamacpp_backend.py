@@ -49,7 +49,7 @@ LLAMACPP_MODELS = {
         "base": "Qwen3-VL-2B",
         "context": 8192,
         "description": "Compact and fast, optimized for CPU/Edge",
-        "hf_repo": "Keyvan/german-ocr-2b-gguf",
+        "hf_repo": "Keyven/german-ocr-2b-gguf",
     },
     "german-ocr-turbo": {
         "engine": "German-OCR-Turbo-Engine.gguf",
