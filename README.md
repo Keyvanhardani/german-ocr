@@ -25,6 +25,8 @@
 | **PDF Support** | Images only | Up to 50 pages |
 | **Privacy** | 100% local | DSGVO-konform (Frankfurt) |
 | **Speed** | ~5s/page | ~2-3s/page |
+| **Backends** | Ollama, llama.cpp, HuggingFace | Cloud API |
+| **Hardware** | CPU, GPU, NPU (CUDA/Metal/Vulkan/OpenVINO) | Managed |
 
 ## Installation
 
@@ -121,6 +123,32 @@ from german_ocr import GermanOCR
 ocr = GermanOCR()
 text = ocr.extract("invoice.png")
 print(text)
+```
+
+### Option 3: Local (llama.cpp)
+
+For maximum control and edge deployment with GGUF models.
+
+```bash
+# Install with GPU support (CUDA)
+CMAKE_ARGS="-DGGML_CUDA=on" pip install german-ocr[llamacpp]
+
+# Or CPU only
+pip install german-ocr[llamacpp]
+```
+
+```python
+from german_ocr import GermanOCR
+
+# Auto-detect best device (GPU/CPU)
+ocr = GermanOCR(backend="llamacpp")
+text = ocr.extract("invoice.png")
+
+# Force CPU only
+ocr = GermanOCR(backend="llamacpp", n_gpu_layers=0)
+
+# Full GPU acceleration
+ocr = GermanOCR(backend="llamacpp", n_gpu_layers=-1)
 ```
 
 ## Cloud Models
@@ -248,10 +276,26 @@ print(f"Usage: {usage}")
 
 ## Local Models
 
+### Ollama Models
+
 | Model | Size | Speed | Best For |
 |-------|------|-------|----------|
 | [german-ocr-turbo](https://ollama.com/Keyvan/german-ocr-turbo) | 1.9 GB | ~5s | Recommended |
 | [german-ocr](https://ollama.com/Keyvan/german-ocr) | 3.2 GB | ~7s | Standard |
+
+### GGUF Models (llama.cpp)
+
+| Model | Size | Speed | Best For |
+|-------|------|-------|----------|
+| [german-ocr-2b](https://huggingface.co/Keyvan/german-ocr-2b-gguf) | 1.5 GB | ~5s (GPU) / ~25s (CPU) | Edge/Embedded |
+| [german-ocr-turbo](https://huggingface.co/Keyvan/german-ocr-turbo-gguf) | 1.9 GB | ~5s (GPU) / ~20s (CPU) | Best accuracy |
+
+**Hardware Support:**
+- CUDA (NVIDIA GPUs)
+- Metal (Apple Silicon)
+- Vulkan (AMD/Intel/NVIDIA)
+- OpenVINO (Intel NPU)
+- CPU (all platforms)
 
 ## Pricing
 

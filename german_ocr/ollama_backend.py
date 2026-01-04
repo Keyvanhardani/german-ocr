@@ -24,6 +24,15 @@ AVAILABLE_MODELS = {
         "accuracy": "100%",
         "description": "Fastest model, optimized for speed and accuracy",
     },
+    "german-ocr-2b": {
+        "name": "Keyvan/german-ocr-2b",
+        "display": "German-OCR 2B",
+        "size": "1.5GB",
+        "base": "Qwen3-VL-2B",
+        "speed": "~5s",
+        "accuracy": "100%",
+        "description": "Compact model, optimized for edge/embedded deployment",
+    },
     "german-ocr": {
         "name": "Keyvan/german-ocr",
         "display": "German-OCR v1",

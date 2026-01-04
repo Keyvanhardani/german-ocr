@@ -65,16 +65,21 @@ def validate_backend(backend: str) -> str:
     Raises:
         ValueError: If backend is not supported
     """
-    valid_backends = {"ollama", "huggingface", "hf", "auto"}
+    valid_backends = {"ollama", "huggingface", "hf", "llamacpp", "llama.cpp", "llama-cpp", "auto"}
     backend_lower = backend.lower()
 
     if backend_lower not in valid_backends:
         raise ValueError(
-            f"Unsupported backend: {backend}. " f"Valid options: {', '.join(valid_backends)}"
+            f"Unsupported backend: {backend}. "
+            f"Valid options: ollama, huggingface, llamacpp, auto"
         )
 
     # Normalize HuggingFace variants
     if backend_lower in {"huggingface", "hf"}:
         return "huggingface"
+
+    # Normalize llama.cpp variants
+    if backend_lower in {"llamacpp", "llama.cpp", "llama-cpp"}:
+        return "llamacpp"
 
     return backend_lower

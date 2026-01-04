@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "german-ocr"
-version = "0.5.1"
-description = "High-performance German document OCR - Cloud API with Turbo, Pro and Ultra models"
+version = "0.6.0"
+description = "High-performance German document OCR - Local & Cloud with GPU/CPU support"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
@@ -21,7 +21,12 @@ keywords = [
     "invoice",
     "text-extraction",
     "dsgvo",
-    "cloud-api",
+    "llama-cpp",
+    "gguf",
+    "vision-language-model",
+    "local-ai",
+    "cpu-inference",
+    "gpu-inference",
     "document-ai"
 ]
 classifiers = [
@@ -52,8 +57,15 @@ hf = [
     "transformers>=4.40.0",
     "qwen-vl-utils>=0.0.10",
 ]
+llamacpp = [
+    "llama-cpp-python>=0.2.0",
+]
+cuda = [
+    "torch>=2.0.0",
+    "llama-cpp-python>=0.2.0",
+]
 all = [
-    "german-ocr[hf]",
+    "german-ocr[hf,llamacpp]",
 ]
 dev = [
     "pytest>=7.0.0",

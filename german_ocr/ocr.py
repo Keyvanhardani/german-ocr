@@ -15,14 +15,15 @@ class GermanOCR:
     """Production-ready German OCR with automatic backend selection.
 
     This class provides a unified interface for German OCR with support for
-    multiple backends (Ollama, HuggingFace). It automatically selects the
-    best available backend or allows manual selection.
+    multiple backends (Ollama, HuggingFace, llama.cpp). It automatically selects
+    the best available backend or allows manual selection.
 
     Args:
-        backend: Backend to use ('auto', 'ollama', 'huggingface', 'hf')
+        backend: Backend to use ('auto', 'ollama', 'huggingface', 'hf', 'llamacpp', 'llama.cpp')
         model_name: Model name for the selected backend
-        device: Device for HuggingFace backend ('auto', 'cuda', 'cpu', 'mps')
+        device: Device selection ('auto', 'cuda', 'cpu', 'mps', 'metal', 'vulkan', 'openvino')
         quantization: Quantization mode for HF backend ('none', '4bit', '8bit')
+        n_gpu_layers: GPU layers for llama.cpp (-1=all, 0=CPU only)
         log_level: Logging level ('DEBUG', 'INFO', 'WARNING', 'ERROR')
 
     Example:
@@ -41,10 +42,17 @@ class GermanOCR:
         model_name: Optional[str] = None,
         device: str = "auto",
         quantization: Optional[str] = None,
+        n_gpu_layers: int = -1,
+        model_dir: Optional[str] = None,
         log_level: str = "INFO",
     ) -> None:
         """Initialize GermanOCR with the specified backend."""
         setup_logging(log_level)
+
+        # Store config
+        self.device = device
+        self.n_gpu_layers = n_gpu_layers
+        self.model_dir = model_dir
 
         # Validate and normalize backend
         backend = validate_backend(backend)
@@ -62,6 +70,8 @@ class GermanOCR:
             self._init_ollama(model_name)
         elif backend == "huggingface":
             self._init_huggingface(model_name, device, quantization)
+        elif backend == "llamacpp":
+            self._init_llamacpp(model_name, device, n_gpu_layers, model_dir)
         else:
             raise ValueError(f"Unsupported backend: {backend}")
 
@@ -71,8 +81,9 @@ class GermanOCR:
         """Auto-detect the best available backend.
 
         Priority order:
-        1. Ollama (fastest for local inference)
-        2. HuggingFace (fallback)
+        1. Ollama (fastest for local inference, easy setup)
+        2. llama.cpp (best for CPU/Edge, GGUF models)
+        3. HuggingFace (fallback, requires GPU)
 
         Returns:
             Backend name
@@ -83,18 +94,29 @@ class GermanOCR:
         from german_ocr.hf_backend import HuggingFaceBackend
         from german_ocr.ollama_backend import OllamaBackend
 
+        try:
+            from german_ocr.llamacpp_backend import LlamaCppBackend
+            has_llamacpp = True
+        except ImportError:
+            has_llamacpp = False
+
         if OllamaBackend.is_available():
             logger.info("Ollama backend detected and available")
             return "ollama"
+
+        if has_llamacpp and LlamaCppBackend.is_available():
+            logger.info("llama.cpp backend detected and available")
+            return "llamacpp"
 
         if HuggingFaceBackend.is_available():
             logger.info("HuggingFace backend detected and available")
             return "huggingface"
 
         raise RuntimeError(
-            "No OCR backend available. Please install either:\n"
-            "  - Ollama: https://ollama.ai\n"
-            "  - HuggingFace Transformers: pip install transformers torch"
+            "No OCR backend available. Please install one of:\n"
+            "  - Ollama: https://ollama.ai (recommended)\n"
+            "  - llama.cpp: pip install llama-cpp-python\n"
+            "  - HuggingFace: pip install transformers torch"
         )
 
     def _init_ollama(self, model_name: Optional[str]) -> None:
@@ -139,6 +161,37 @@ class GermanOCR:
             logger.info(f"Initialized HuggingFace backend with model: {model}")
         except Exception as e:
             raise RuntimeError(f"Failed to initialize HuggingFace backend: {e}") from e
+
+    def _init_llamacpp(
+        self,
+        model_name: Optional[str],
+        device: str,
+        n_gpu_layers: int,
+        model_dir: Optional[str],
+    ) -> None:
+        """Initialize llama.cpp backend.
+
+        Args:
+            model_name: Model identifier (e.g., 'german-ocr-2b')
+            device: Device selection ('auto', 'cuda', 'cpu', 'metal', 'vulkan', 'openvino')
+            n_gpu_layers: GPU layers to offload (-1=all, 0=CPU)
+            model_dir: Custom model directory
+        """
+        from german_ocr.llamacpp_backend import LlamaCppBackend
+
+        default_model = "german-ocr-2b"
+        model = model_name if model_name else default_model
+
+        try:
+            self._backend = LlamaCppBackend(
+                model_name=model,
+                device=device,
+                n_gpu_layers=n_gpu_layers,
+                model_dir=model_dir,
+            )
+            logger.info(f"Initialized llama.cpp backend with model: {model}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize llama.cpp backend: {e}") from e
 
     def extract(
         self,
@@ -243,15 +296,24 @@ class GermanOCR:
         Example:
             >>> backends = GermanOCR.list_available_backends()
             >>> print(f"Ollama available: {backends['ollama']}")
+            >>> print(f"llama.cpp available: {backends['llamacpp']}")
             >>> print(f"HuggingFace available: {backends['huggingface']}")
         """
         from german_ocr.hf_backend import HuggingFaceBackend
         from german_ocr.ollama_backend import OllamaBackend
 
-        return {
+        result = {
             "ollama": OllamaBackend.is_available(),
             "huggingface": HuggingFaceBackend.is_available(),
         }
+
+        try:
+            from german_ocr.llamacpp_backend import LlamaCppBackend
+            result["llamacpp"] = LlamaCppBackend.is_available()
+        except ImportError:
+            result["llamacpp"] = False
+
+        return result
 
     @staticmethod
     def list_models() -> Dict[str, Dict[str, str]]:
