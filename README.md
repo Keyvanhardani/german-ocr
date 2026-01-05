@@ -1,6 +1,8 @@
 <p align="center">
-  <img src="docs/icon.png" alt="German-OCR Logo" width="120"/>
+  <img src="docs/icon.png" alt="German-OCR Logo" width="150"/>
 </p>
+
+<h1 align="center">German-OCR</h1>
 
 <p align="center">
   <strong>High-performance German document OCR - Local & Cloud</strong>
@@ -14,9 +16,37 @@
   <a href="https://app.german-ocr.de"><img src="https://img.shields.io/badge/Cloud-API-green" alt="Cloud API"></a>
 </p>
 
+<p align="center">
+  <a href="https://huggingface.co/Keyven"><img src="https://img.shields.io/badge/🤗%20Hugging%20Face-Models-yellow" alt="Hugging Face"></a>
+  <a href="https://ollama.com/Keyvan"><img src="https://img.shields.io/badge/🦙%20Ollama-Models-blue" alt="Ollama"></a>
+  <img src="https://img.shields.io/badge/llama.cpp-GGUF-orange" alt="llama.cpp">
+</p>
+
 ---
 
-## Features
+## 🚀 Supported Backends
+
+<p align="center">
+  <a href="https://huggingface.co/Keyven">
+    <img src="https://huggingface.co/front/assets/huggingface_logo-noborder.svg" alt="Hugging Face" width="50">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://ollama.com/Keyvan">
+    <img src="https://ollama.com/public/ollama.png" alt="Ollama" width="50">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://github.com/ggerganov/llama.cpp">
+    <img src="https://user-images.githubusercontent.com/1991296/230134379-7181e485-c521-4d23-a0d6-f7b3b61ba524.png" alt="llama.cpp" width="50">
+  </a>
+</p>
+
+<p align="center">
+  <strong>Hugging Face</strong> &nbsp;•&nbsp; <strong>Ollama</strong> &nbsp;•&nbsp; <strong>llama.cpp</strong>
+</p>
+
+---
+
+## ✨ Features
 
 | Feature | Local | Cloud |
 |---------|-------|-------|
@@ -28,7 +58,7 @@
 | **Backends** | Ollama, llama.cpp, HuggingFace | Cloud API |
 | **Hardware** | CPU, GPU, NPU (CUDA/Metal/Vulkan/OpenVINO) | Managed |
 
-## Installation
+## 📦 Installation
 
 ### Python
 ```bash
@@ -47,9 +77,9 @@ composer require keyvan/german-ocr
 
 ---
 
-## Quick Start
+## ⚡ Quick Start
 
-### Option 1: Cloud API (Recommended)
+### Option 1: ☁️ Cloud API (Recommended)
 
 No GPU required. Get your API credentials at [app.german-ocr.de](https://app.german-ocr.de)
 
@@ -108,7 +138,7 @@ $result = $client->analyze('invoice.pdf', [
 echo $result['text'];
 ```
 
-### Option 2: Local (Ollama)
+### Option 2: 🦙 Local (Ollama)
 
 Requires [Ollama](https://ollama.ai) installed.
 
@@ -125,7 +155,7 @@ text = ocr.extract("invoice.png")
 print(text)
 ```
 
-### Option 3: Local (llama.cpp)
+### Option 3: 🔧 Local (llama.cpp)
 
 For maximum control and edge deployment with GGUF models.
 
@@ -151,7 +181,7 @@ ocr = GermanOCR(backend="llamacpp", n_gpu_layers=0)
 ocr = GermanOCR(backend="llamacpp", n_gpu_layers=-1)
 ```
 
-## Cloud Models
+## ☁️ Cloud Models
 
 | Model | Parameter | Best For |
 |-------|-----------|----------|
@@ -179,7 +209,7 @@ result = client.analyze("dokument.pdf", model="german-ocr-pro")
 result = client.analyze("dokument.pdf", model="german-ocr")
 ```
 
-## CLI Usage
+## 💻 CLI Usage
 
 ### Cloud
 
@@ -214,7 +244,7 @@ german-ocr --batch ./invoices/
 german-ocr --format json invoice.png
 ```
 
-## Cloud API
+## 🔌 Cloud API
 
 ### Output Formats
 
@@ -274,16 +304,16 @@ usage = client.get_usage()
 print(f"Usage: {usage}")
 ```
 
-## Local Models
+## 🏠 Local Models
 
-### Ollama Models
+### 🦙 Ollama Models
 
 | Model | Size | Speed | Best For |
 |-------|------|-------|----------|
 | [german-ocr-turbo](https://ollama.com/Keyvan/german-ocr-turbo) | 1.9 GB | ~5s | Recommended |
 | [german-ocr](https://ollama.com/Keyvan/german-ocr) | 3.2 GB | ~7s | Standard |
 
-### GGUF Models (llama.cpp)
+### 🤗 GGUF Models (llama.cpp / Hugging Face)
 
 | Model | Size | Speed | Best For |
 |-------|------|-------|----------|
@@ -297,20 +327,24 @@ print(f"Usage: {usage}")
 - OpenVINO (Intel NPU)
 - CPU (all platforms)
 
-## Pricing
+## 💰 Pricing
 
 See current pricing at [app.german-ocr.de](https://app.german-ocr.de)
 
-## License
+## 📄 License
 
 Apache 2.0 - See [LICENSE](LICENSE) for details.
 
-## Author
+## 👤 Author
 
 **Keyvan Hardani** - [keyvan.ai](https://keyvan.ai)
 
 ---
 
 <p align="center">
-  Made with love in Germany
+  Made with ❤️ in Germany 🇩🇪
+</p>
+
+<p align="center">
+  <a href="https://github.com/Keyvanhardani/german-ocr">⭐ Star us on GitHub!</a>
 </p>
