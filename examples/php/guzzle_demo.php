@@ -1,15 +1,16 @@
 <?php
 /**
- * German-OCR API - Guzzle HTTP Client Beispiel (PHP)
+ * German-OCR API - Guzzle HTTP Client Beispiel (Async-Workflow)
  *
- * Dieses Skript zeigt, wie man die German-OCR API
- * mit dem Guzzle HTTP Client verwendet.
+ * Dieses Skript zeigt, wie man die German-OCR API mit Guzzle verwendet
+ * und auf das Ergebnis wartet (Polling).
  *
  * Installation:
  *   composer require guzzlehttp/guzzle
  *
  * Verwendung:
  *   php guzzle_demo.php <bildpfad> [prompt] [model]
+ *   php guzzle_demo.php <datei1> <datei2> ... (Batch)
  */
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -20,20 +21,30 @@ use GuzzleHttp\Exception\ConnectException;
 
 // API-Konfiguration
 define('API_ENDPOINT', 'https://api.german-ocr.de/v1/analyze');
+define('API_JOB_ENDPOINT', 'https://api.german-ocr.de/v1/jobs/');
 define('API_KEY', getenv('GERMAN_OCR_API_KEY') ?: 'YOUR_API_KEY');
 define('API_SECRET', getenv('GERMAN_OCR_API_SECRET') ?: 'YOUR_API_SECRET');
 
+// Timeout-Konfiguration (Sekunden)
+define('TIMEOUT_SUBMIT', 30);     // Timeout für Job-Submit
+define('TIMEOUT_POLL', 5);        // Timeout für Status-Abfrage
+define('MAX_POLL_ATTEMPTS', 60);  // Max. Wartezeit: 60 * 2s = 2 Minuten
+define('POLL_INTERVAL', 2);       // Sekunden zwischen Status-Abfragen
+
 /**
- * Analysiert ein Dokument mit der German-OCR API (Guzzle)
- *
- * @param string $filePath Pfad zur Bilddatei
- * @param string|null $prompt Optionaler Prompt
- * @param string $model Modell-Auswahl (german-ocr, german-ocr-pro, german-ocr-ultra)
- * @return array API-Antwort
- * @throws Exception Bei Fehlern
+ * Analysiert ein Dokument mit der German-OCR API (Guzzle + Async Polling)
  */
-function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro') {
-    // Prüfe ob Datei existiert
+function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro', $waitForResult = true) {
+    // Prüfe Credentials
+    if (API_KEY === 'YOUR_API_KEY' || API_SECRET === 'YOUR_API_SECRET') {
+        throw new Exception(
+            "API-Credentials nicht konfiguriert!\n" .
+            "   Setze Umgebungsvariablen:\n" .
+            "   export GERMAN_OCR_API_KEY='gocr_xxx'\n" .
+            "   export GERMAN_OCR_API_SECRET='xxx'"
+        );
+    }
+
     if (!file_exists($filePath)) {
         throw new Exception("Datei nicht gefunden: $filePath");
     }
@@ -48,17 +59,42 @@ function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro') {
     }
     echo "\n";
 
-    // Guzzle Client erstellen
+    // Job submitten
+    $jobResult = submitJobGuzzle($filePath, $prompt, $model);
+    $jobId = $jobResult['job_id'] ?? null;
+
+    if (!$jobId) {
+        throw new Exception("Keine Job-ID erhalten");
+    }
+
+    echo "✅ Job erfolgreich gestartet!\n";
+    echo "📋 Job-ID: $jobId\n";
+    echo "🤖 Modell: " . ($jobResult['model'] ?? $model) . "\n";
+    echo "\n";
+
+    if (!$waitForResult) {
+        echo "ℹ️  Modus: Fire-and-Forget (--no-wait)\n";
+        return $jobResult;
+    }
+
+    echo "⏳ Warte auf Ergebnis...\n";
+    return pollJobStatusGuzzle($jobId);
+}
+
+/**
+ * Submits einen OCR-Job an die API (Guzzle)
+ */
+function submitJobGuzzle($filePath, $prompt = null, $model = 'german-ocr-pro') {
+    $fileName = basename($filePath);
+
     $client = new Client([
-        'timeout' => 60.0,
-        'verify' => true, // SSL-Verifizierung
-        'http_errors' => false // Fehler manuell behandeln
+        'timeout' => TIMEOUT_SUBMIT,
+        'verify' => true,
+        'http_errors' => false
     ]);
 
-    // Auth-Header
     $authToken = API_KEY . ':' . API_SECRET;
 
-    // Multipart-FormData vorbereiten
     $multipart = [
         [
             'name' => 'file',
@@ -78,9 +114,6 @@ function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro') {
         ];
     }
 
-    // Request senden und Zeit messen
-    $startTime = microtime(true);
-
     try {
         $response = $client->request('POST', API_ENDPOINT, [
             'headers' => [
@@ -89,97 +122,132 @@ function analyzeDocument($filePath, $prompt = null, $model = 'german-ocr-pro') {
             'multipart' => $multipart
         ]);
 
-        $responseTime = round((microtime(true) - $startTime) * 1000);
-
-        // HTTP-Statuscode prüfen (200 = direkt, 202 = async Job)
         $statusCode = $response->getStatusCode();
 
-        if ($statusCode !== 200 && $statusCode !== 202) {
+        if ($statusCode !== 202 && $statusCode !== 200) {
             $body = (string) $response->getBody();
             throw new Exception("API-Fehler ($statusCode): $body");
         }
 
-        // JSON dekodieren
         $result = json_decode($response->getBody(), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new Exception("JSON-Fehler: " . json_last_error_msg());
         }
 
-        // Ergebnis ausgeben
-        if ($statusCode === 202) {
-            // Async Job
-            echo "✅ Job erfolgreich gestartet!\n";
-            echo "⏱️  Antwortzeit: {$responseTime}ms\n";
-            echo "\n";
-            echo "📋 Job-ID: " . ($result['job_id'] ?? 'N/A') . "\n";
-            echo "🤖 Modell: " . ($result['model'] ?? 'N/A') . "\n";
-            echo "📊 Status: " . ($result['status'] ?? 'N/A') . "\n";
-        } else {
-            // Direktes Ergebnis
-            echo "✅ Erfolgreich verarbeitet!\n";
-            echo "⏱️  Antwortzeit: {$responseTime}ms\n";
-            echo "\n";
-            echo "📄 Ergebnis:\n";
-            echo str_repeat('─', 60) . "\n";
-            echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            echo "\n";
-            echo str_repeat('─', 60) . "\n";
-        }
-
         return $result;
 
     } catch (ConnectException $e) {
-        $responseTime = round((microtime(true) - $startTime) * 1000);
-        echo "❌ Verbindungsfehler nach {$responseTime}ms:\n";
-        echo "   " . $e->getMessage() . "\n";
-        throw $e;
-
+        throw new Exception("Verbindungsfehler: " . $e->getMessage());
     } catch (RequestException $e) {
-        $responseTime = round((microtime(true) - $startTime) * 1000);
-        echo "❌ Request-Fehler nach {$responseTime}ms:\n";
-        echo "   " . $e->getMessage() . "\n";
-
+        $msg = $e->getMessage();
         if ($e->hasResponse()) {
-            $body = (string) $e->getResponse()->getBody();
-            echo "   Antwort: $body\n";
+            $msg .= " - " . (string) $e->getResponse()->getBody();
         }
-
-        throw $e;
-
-    } catch (Exception $e) {
-        $responseTime = round((microtime(true) - $startTime) * 1000);
-        echo "❌ Fehler nach {$responseTime}ms:\n";
-        echo "   " . $e->getMessage() . "\n";
-        throw $e;
+        throw new Exception("Request-Fehler: $msg");
     }
 }
 
 /**
- * Batch-Verarbeitung mit Guzzle (asynchron)
- *
- * @param array $filePaths Array von Dateipfaden
- * @return array Batch-Statistiken
+ * Pollt den Job-Status bis zum Abschluss (Guzzle)
  */
-function processBatch(array $filePaths) {
-    echo "🚀 Starte Batch-Verarbeitung mit Guzzle (async)...\n";
+function pollJobStatusGuzzle($jobId) {
+    $client = new Client([
+        'timeout' => TIMEOUT_POLL,
+        'verify' => true,
+        'http_errors' => false
+    ]);
+
+    $authToken = API_KEY . ':' . API_SECRET;
+    $attempts = 0;
+    $startTime = microtime(true);
+
+    while ($attempts < MAX_POLL_ATTEMPTS) {
+        $attempts++;
+
+        try {
+            $response = $client->request('GET', API_JOB_ENDPOINT . $jobId, [
+                'headers' => [
+                    'Authorization' => "Bearer $authToken"
+                ]
+            ]);
+
+            $statusCode = $response->getStatusCode();
+
+            if ($statusCode !== 200) {
+                throw new Exception("Status-Abfrage fehlgeschlagen ($statusCode)");
+            }
+
+            $status = json_decode($response->getBody(), true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception("JSON-Fehler: " . json_last_error_msg());
+            }
+
+            $jobStatus = $status['status'] ?? 'unknown';
+
+            $elapsed = round(microtime(true) - $startTime, 1);
+            echo "\r   Status: $jobStatus ({$elapsed}s)...";
+
+            if ($jobStatus === 'completed') {
+                $totalTime = round((microtime(true) - $startTime) * 1000);
+                echo "\n\n";
+                echo "✅ Erfolgreich verarbeitet!\n";
+                echo "⏱️  Gesamtzeit: {$totalTime}ms\n";
+                echo "📊 Verarbeitungszeit: " . ($status['processing_time_ms'] ?? 'N/A') . "ms\n";
+                echo "💰 Kosten: " . ($status['price_display'] ?? 'N/A') . "\n";
+                echo "\n";
+                echo "📄 Ergebnis:\n";
+                echo str_repeat('─', 60) . "\n";
+                echo $status['result'] ?? 'Kein Ergebnis';
+                echo "\n";
+                echo str_repeat('─', 60) . "\n";
+
+                return $status;
+            }
+
+            if ($jobStatus === 'failed') {
+                throw new Exception("Job fehlgeschlagen: " . ($status['error'] ?? 'Unbekannter Fehler'));
+            }
+
+            sleep(POLL_INTERVAL);
+
+        } catch (ConnectException $e) {
+            echo "\n⚠️  Verbindungsfehler, versuche erneut...\n";
+            sleep(POLL_INTERVAL);
+        }
+    }
+
+    throw new Exception("Timeout: Job nach " . (MAX_POLL_ATTEMPTS * POLL_INTERVAL) . " Sekunden nicht fertig");
+}
+
+/**
+ * Batch-Verarbeitung mit Guzzle (asynchron + Polling)
+ */
+function processBatch(array $filePaths, $model = 'german-ocr-pro') {
+    if (API_KEY === 'YOUR_API_KEY' || API_SECRET === 'YOUR_API_SECRET') {
+        throw new Exception("API-Credentials nicht konfiguriert!");
+    }
+
+    echo "🚀 Starte Batch-Verarbeitung mit Guzzle...\n";
     echo "   Dokumente: " . count($filePaths) . "\n";
-    echo "   Modell: german-ocr-pro (schnell und zuverlässig)\n";
+    echo "   Modell: $model\n";
     echo "\n";
 
     $client = new Client([
-        'timeout' => 60.0,
-        'verify' => true
+        'timeout' => TIMEOUT_SUBMIT,
+        'verify' => true,
+        'http_errors' => false
     ]);
 
     $authToken = API_KEY . ':' . API_SECRET;
     $promises = [];
     $startTime = microtime(true);
 
-    // Promises für alle Dateien erstellen
+    echo "📤 Phase 1: Jobs submitten...\n";
     foreach ($filePaths as $index => $filePath) {
         if (!file_exists($filePath)) {
-            echo "⚠️  [$index] Datei nicht gefunden: $filePath\n";
+            echo "   ⚠️  [$index] Datei nicht gefunden: $filePath\n";
             continue;
         }
 
@@ -193,11 +261,10 @@ function processBatch(array $filePaths) {
             ],
             [
                 'name' => 'model',
-                'contents' => 'german-ocr-pro'
+                'contents' => $model
             ]
         ];
 
-        // Asynchronen Request erstellen
         $promises[$index] = $client->requestAsync('POST', API_ENDPOINT, [
             'headers' => [
                 'Authorization' => "Bearer $authToken"
@@ -206,41 +273,97 @@ function processBatch(array $filePaths) {
         ]);
     }
 
-    // Alle Promises abwarten
-    $results = \GuzzleHttp\Promise\Utils::settle($promises)->wait();
+    $submitResults = \GuzzleHttp\Promise\Utils::settle($promises)->wait();
+
+    $jobIds = [];
+    foreach ($submitResults as $index => $result) {
+        $fileName = basename($filePaths[$index]);
+        if ($result['state'] === 'fulfilled') {
+            $response = $result['value'];
+            $statusCode = $response->getStatusCode();
+            if ($statusCode === 202 || $statusCode === 200) {
+                $data = json_decode($response->getBody(), true);
+                if (isset($data['job_id'])) {
+                    $jobIds[$index] = $data['job_id'];
+                    echo "   ✓ [$index] $fileName → Job " . substr($data['job_id'], 0, 8) . "...\n";
+                }
+            } else {
+                echo "   ✗ [$index] $fileName → HTTP $statusCode\n";
+            }
+        } else {
+            echo "   ✗ [$index] $fileName → Fehler\n";
+        }
+    }
+
+    echo "\n";
+    echo "⏳ Phase 2: Auf Ergebnisse warten...\n";
+
+    $pollClient = new Client([
+        'timeout' => TIMEOUT_POLL,
+        'verify' => true,
+        'http_errors' => false
+    ]);
+
+    $results = [];
+    $pending = $jobIds;
+    $attempts = 0;
+
+    while (!empty($pending) && $attempts < MAX_POLL_ATTEMPTS) {
+        $attempts++;
+
+        foreach ($pending as $index => $jobId) {
+            $response = $pollClient->request('GET', API_JOB_ENDPOINT . $jobId, [
+                'headers' => ['Authorization' => "Bearer $authToken"]
+            ]);
+
+            if ($response->getStatusCode() === 200) {
+                $status = json_decode($response->getBody(), true);
+                $jobStatus = $status['status'] ?? 'unknown';
+
+                if ($jobStatus === 'completed' || $jobStatus === 'failed') {
+                    $results[$index] = $status;
+                    unset($pending[$index]);
+                }
+            }
+        }
+
+        if (!empty($pending)) {
+            $elapsed = round(microtime(true) - $startTime, 1);
+            echo "   ⏳ " . count($pending) . " Jobs ausstehend ({$elapsed}s)...\r";
+            sleep(POLL_INTERVAL);
+        }
+    }
+
     $totalTime = round((microtime(true) - $startTime) * 1000);
 
-    // Ergebnisse auswerten
-    $successful = 0;
-    $failed = 0;
-
+    echo "\n\n";
     echo "📊 Batch-Ergebnisse:\n";
     echo str_repeat('═', 70) . "\n";
 
-    foreach ($results as $index => $result) {
-        $fileName = basename($filePaths[$index]);
+    $successful = 0;
+    $failed = 0;
 
-        if ($result['state'] === 'fulfilled') {
-            $response = $result['value'];
-            if ($response->getStatusCode() === 200) {
+    foreach ($filePaths as $index => $filePath) {
+        $fileName = basename($filePath);
+
+        if (isset($results[$index])) {
+            $status = $results[$index];
+            if (($status['status'] ?? '') === 'completed') {
                 $successful++;
                 echo "✅ [$index] $fileName\n";
-
-                $data = json_decode($response->getBody(), true);
-                if (isset($data['text'])) {
-                    $preview = substr($data['text'], 0, 60);
+                echo "   ⏱️  " . ($status['processing_time_ms'] ?? 'N/A') . "ms\n";
+                if (isset($status['result'])) {
+                    $preview = substr($status['result'], 0, 60);
                     $preview = str_replace("\n", ' ', $preview);
-                    echo "   📄 Text: $preview...\n";
+                    echo "   📄 $preview...\n";
                 }
             } else {
                 $failed++;
-                echo "❌ [$index] $fileName (HTTP {$response->getStatusCode()})\n";
+                echo "❌ [$index] $fileName (failed)\n";
             }
         } else {
             $failed++;
-            $reason = $result['reason'];
-            echo "❌ [$index] $fileName\n";
-            echo "   ⚠️  Fehler: {$reason->getMessage()}\n";
+            echo "❌ [$index] $fileName (timeout/fehler)\n";
         }
     }
 
@@ -262,7 +385,8 @@ function processBatch(array $filePaths) {
         'total' => count($filePaths),
         'successful' => $successful,
         'failed' => $failed,
-        'total_time' => $totalTime
+        'total_time' => $totalTime,
+        'results' => $results
     ];
 }
 
@@ -272,27 +396,12 @@ function processBatch(array $filePaths) {
 function main() {
     global $argv;
 
-    if (count($argv) < 2) {
-        echo "❌ Fehler: Keine Datei(en) angegeben\n";
-        echo "\n";
-        echo "Verwendung:\n";
-        echo "  Einzelne Datei:\n";
-        echo "    php guzzle_demo.php <bildpfad> [prompt] [model]\n";
-        echo "\n";
-        echo "  Batch-Verarbeitung:\n";
-        echo "    php guzzle_demo.php <datei1> <datei2> <datei3> ...\n";
-        echo "\n";
-        echo "Beispiele:\n";
-        echo "  php guzzle_demo.php rechnung.jpg\n";
-        echo "  php guzzle_demo.php rechnung.pdf \"Extrahiere Rechnungsnummer\"\n";
-        echo "  php guzzle_demo.php doc1.jpg doc2.jpg doc3.pdf (Batch)\n";
-        echo "\n";
-        echo "Modell-Optionen: german-ocr-ultra, german-ocr-pro (Standard), german-ocr\n";
-        exit(1);
+    if (count($argv) < 2 || in_array('--help', $argv) || in_array('-h', $argv)) {
+        showHelpGuzzle();
+        exit(count($argv) < 2 ? 1 : 0);
     }
 
     try {
-        // Prüfe ob Composer Autoloader existiert
         if (!class_exists('GuzzleHttp\Client')) {
             throw new Exception(
                 "Guzzle nicht installiert.\n" .
@@ -300,10 +409,32 @@ function main() {
             );
         }
 
-        // Batch-Modus wenn mehrere Dateien
-        if (count($argv) > 2 && file_exists($argv[2])) {
-            $filePaths = array_slice($argv, 1);
-            $stats = processBatch($filePaths);
+        $files = [];
+        $prompt = null;
+        $model = 'german-ocr-pro';
+        $waitForResult = true;
+
+        for ($i = 1; $i < count($argv); $i++) {
+            $arg = $argv[$i];
+
+            if ($arg === '--no-wait') {
+                $waitForResult = false;
+            } elseif (in_array($arg, ['german-ocr', 'german-ocr-pro', 'german-ocr-ultra', 'local', 'cloud_fast', 'cloud'])) {
+                $model = $arg;
+            } elseif (file_exists($arg)) {
+                $files[] = $arg;
+            } elseif (count($files) === 1 && $prompt === null) {
+                $prompt = $arg;
+            }
+        }
+
+        if (empty($files)) {
+            throw new Exception("Keine gültigen Dateien angegeben");
+        }
+
+        if (count($files) > 1) {
+            echo "📁 Batch-Modus: " . count($files) . " Dateien\n\n";
+            $stats = processBatch($files, $model);
 
             echo "\n";
             if ($stats['failed'] > 0) {
@@ -314,12 +445,7 @@ function main() {
             }
 
         } else {
-            // Einzelner Request
-            $filePath = $argv[1];
-            $prompt = isset($argv[2]) && $argv[2] !== '' ? $argv[2] : null;
-            $model = isset($argv[3]) ? $argv[3] : 'german-ocr-pro';
-
-            analyzeDocument($filePath, $prompt, $model);
+            analyzeDocument($files[0], $prompt, $model, $waitForResult);
             echo "\n";
             echo "✨ Fertig!\n";
         }
@@ -333,7 +459,34 @@ function main() {
     }
 }
 
-// Nur ausführen wenn direkt aufgerufen
+function showHelpGuzzle() {
+    echo "German-OCR API - Guzzle HTTP Demo\n";
+    echo str_repeat('═', 50) . "\n\n";
+    echo "Verwendung:\n";
+    echo "  Einzelne Datei:\n";
+    echo "    php guzzle_demo.php <bildpfad> [prompt] [model] [optionen]\n";
+    echo "\n";
+    echo "  Batch-Verarbeitung:\n";
+    echo "    php guzzle_demo.php <datei1> <datei2> ... [model]\n";
+    echo "\n";
+    echo "Modelle:\n";
+    echo "  german-ocr-ultra  Maximale Präzision (0,05 EUR/Seite)\n";
+    echo "  german-ocr-pro    Schnell & zuverlässig (0,05 EUR/Seite) [Standard]\n";
+    echo "  german-ocr        DSGVO-konform, lokal (0,02 EUR/Seite)\n";
+    echo "\n";
+    echo "Optionen:\n";
+    echo "  --no-wait     Job starten ohne auf Ergebnis zu warten\n";
+    echo "  --help, -h    Diese Hilfe anzeigen\n";
+    echo "\n";
+    echo "Umgebungsvariablen:\n";
+    echo "  GERMAN_OCR_API_KEY      API-Key (gocr_xxx)\n";
+    echo "  GERMAN_OCR_API_SECRET   API-Secret\n";
+    echo "\n";
+    echo "Installation:\n";
+    echo "  composer require guzzlehttp/guzzle\n";
+    echo "\n";
+}
+
 if (php_sapi_name() === 'cli') {
     main();
 }
