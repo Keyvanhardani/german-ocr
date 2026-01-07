@@ -1,215 +1,259 @@
 # German-OCR API - PHP Demo-Skripte
 
-Funktionierende Beispiele für die Integration der German-OCR API in PHP-Anwendungen.
+Funktionierende Beispiele fuer die Integration der German-OCR API in PHP-Anwendungen.
+
+## API-Architektur: Async Job-Based
+
+Die German-OCR API arbeitet **asynchron** mit Job-IDs:
+
+```
+1. POST /v1/analyze  →  202 Accepted + job_id (sofort!)
+2. GET /v1/jobs/{id} →  Status polling bis completed
+3. Ergebnis abrufen  →  result + Metadaten
+```
+
+**Warum async?** OCR-Verarbeitung kann je nach Dokument 2-30 Sekunden dauern. Mit dem Job-System:
+- Keine HTTP-Timeouts
+- Keine blockierten Verbindungen
+- Fire-and-Forget moeglich
+- Batch-Verarbeitung einfacher
+
+---
 
 ## Voraussetzungen
 
 - PHP 7.4+ installiert
 - cURL-Extension aktiviert
-- Composer (für Guzzle-Demo)
+- Composer (fuer Guzzle-Demo)
 
 ## Installation
 
 ### Native cURL (simple_curl.php)
 
-Keine Installation nötig - cURL ist standardmäßig in PHP enthalten.
+Keine Installation noetig - cURL ist standardmaessig in PHP enthalten.
 
 ```bash
-# cURL-Extension prüfen
+# cURL-Extension pruefen
 php -m | grep curl
-```
-
-Falls nicht vorhanden:
-```bash
-# Ubuntu/Debian
-sudo apt-get install php-curl
-
-# Windows (in php.ini aktivieren)
-extension=curl
 ```
 
 ### Guzzle HTTP Client (guzzle_demo.php)
 
 ```bash
-# Composer installieren (falls nicht vorhanden)
-# https://getcomposer.org/download/
-
-# Dependencies installieren
-composer install
-
-# Oder Guzzle manuell hinzufügen
+cd sdk/demos/php
 composer require guzzlehttp/guzzle
 ```
 
 ---
 
-## Verfügbare Demos
+## Verfuegbare Demos
 
-### 1. Simple cURL Demo - Natives PHP
-
-Upload mit nativem PHP cURL ohne externe Dependencies.
+### 1. Simple cURL Demo
 
 **Datei:** `simple_curl.php`
 
 ```bash
-# Einfacher Upload
-php simple_curl.php rechnung.jpg
+# Standard-Analyse (wartet auf Ergebnis)
+php simple_curl.php rechnung.pdf
 
-# Mit Prompt für strukturierte Ausgabe
-php simple_curl.php rechnung.pdf "Extrahiere Rechnungsnummer und Datum"
+# Mit Prompt
+php simple_curl.php rechnung.jpg "Extrahiere Rechnungsnummer"
 
 # Mit spezifischem Modell
-php simple_curl.php rechnung.jpg "" german-ocr-ultra
-```
+php simple_curl.php rechnung.pdf "" german-ocr-pro
 
-**Features:**
-- Native cURL-Implementierung
-- Keine externen Dependencies
-- CURLFile für sichere Datei-Uploads
-- Timeout-Handling (60 Sekunden)
-- Antwortzeit-Messung
-- SSL-Verifizierung
-- Umfassende Fehlerbehandlung
+# Fire-and-Forget (nur Job senden, nicht warten)
+php simple_curl.php rechnung.pdf --no-wait
+
+# Job-Status abfragen
+php simple_curl.php --status abc-123-def-456
+```
 
 **Beispiel-Ausgabe:**
 ```
-📤 Sende Dokument an German-OCR API...
-   Datei: rechnung.jpg
-   Modell: german-ocr-pro
+German-OCR API - Dokumentenanalyse
+==================================================
+Datei:  rechnung.pdf
+Modell: German-OCR Ultra (0,05 EUR/Seite)
+--------------------------------------------------
 
-✅ Erfolgreich verarbeitet!
-⏱️  Antwortzeit: 1234ms
+1. Sende Dokument...
+   Job-ID: 535f7dde-8578-4236-95a6-1f110da1e5d1
+   Gesendet in: 245ms
 
-📄 Ergebnis:
-────────────────────────────────────────────────────────
-{
-    "text": "Rechnung\nRechnungsnummer: 2025-001234...",
-    "model_used": "German-OCR Pro",
-    "processing_time_ms": 1200
-}
-────────────────────────────────────────────────────────
+2. Warte auf Verarbeitung...
+   Status: completed (Versuch 3, 6s)
+
+3. Ergebnis:
+==================================================
+RECHNUNG Nr. 2026-001
+Datum: 07.01.2026
+Kunde: Max Mustermann GmbH
+...
+==================================================
+
+Statistiken:
+   Modell:            German-OCR Ultra
+   Gesamtzeit:        6234ms
+   Verarbeitungszeit: 2101ms
+   Tokens (in/out):   2623 / 91
+   Preis:             0,05 EUR
+   Verarbeitung:      EU (Frankfurt)
+   DSGVO:             Ja
+
+Fertig!
 ```
 
 ---
 
-### 2. Guzzle Demo - Modern HTTP Client
-
-Upload mit Guzzle HTTP Client - empfohlen für moderne PHP-Anwendungen.
+### 2. Guzzle Demo (mit Batch-Support)
 
 **Datei:** `guzzle_demo.php`
 
 ```bash
 # Einzelne Datei
-php guzzle_demo.php rechnung.jpg
+php guzzle_demo.php rechnung.pdf
 
-# Mit Prompt
-php guzzle_demo.php rechnung.pdf "Extrahiere Rechnungsnummer und Datum"
+# Batch-Verarbeitung (mehrere Dateien parallel!)
+php guzzle_demo.php doc1.pdf doc2.pdf doc3.pdf
 
-# Batch-Verarbeitung (mehrere Dateien parallel)
-php guzzle_demo.php rechnung1.jpg rechnung2.pdf rechnung3.jpg
+# Fire-and-Forget
+php guzzle_demo.php rechnung.pdf --no-wait
+
+# Status abfragen
+php guzzle_demo.php --status abc-123-def-456
 ```
 
-**Features:**
-- Moderner HTTP Client mit Promise-Support
-- Synchrone und asynchrone Verarbeitung
-- Batch-Modus für mehrere Dateien
-- Automatische Retry-Logik möglich
-- Exception-Handling für verschiedene Fehlertypen
-- PSR-7 HTTP Messages
-
-**Beispiel-Ausgabe (Batch):**
+**Batch-Beispiel:**
 ```
-🚀 Starte Batch-Verarbeitung mit Guzzle (async)...
-   Dokumente: 3
-   Modell: german-ocr-pro (schnell und zuverlässig)
+German-OCR API - Batch-Verarbeitung (Guzzle Async)
+============================================================
+Dokumente: 3
+Modell:    German-OCR Ultra
+------------------------------------------------------------
 
-📊 Batch-Ergebnisse:
-══════════════════════════════════════════════════════════════════
-✅ [0] rechnung1.jpg
-   📄 Text: Rechnung Nr. 2025-001234...
-✅ [1] rechnung2.pdf
-   📄 Text: Lieferschein vom 22.12.2025...
-✅ [2] rechnung3.jpg
-   📄 Text: Angebot Nr. 2025-567...
-══════════════════════════════════════════════════════════════════
+1. Sende alle Dokumente...
+   [0] rechnung1.pdf -> Job: abc-123
+   [1] rechnung2.pdf -> Job: def-456
+   [2] rechnung3.jpg -> Job: ghi-789
 
-📈 Statistiken:
-   Gesamt:          3 Dokumente
-   Erfolgreich:     3 ✅
-   Fehlgeschlagen:  0 ❌
-   Gesamtzeit:      1500ms
-   Ø Pro Dokument:  500ms
-   Durchsatz:       2.00 Dok/s
+   Alle Jobs gesendet in: 892ms
+
+2. Warte auf Verarbeitung...
+   Runde 3: 3 fertig, 0 ausstehend (8s)
+
+3. Ergebnisse:
+============================================================
+[0] rechnung1.pdf
+       Text: RECHNUNG Nr. 2026-001...
+[1] rechnung2.pdf
+       Text: Lieferschein vom 07.01.2026...
+[2] rechnung3.jpg
+       Text: Angebot Nr. 2026-567...
+============================================================
+
+Statistiken:
+   Gesamt:         3 Dokumente
+   Erfolgreich:    3
+   Fehlgeschlagen: 0
+   Gesamtzeit:     8234ms
+   Durchsatz:      0.36 Dok/s
 ```
 
 ---
 
 ## API-Konfiguration
 
-Die Zugangsdaten sind bereits in den Skripten hinterlegt:
+### Umgebungsvariablen (empfohlen)
+
+```bash
+export GERMAN_OCR_API_KEY="gocr_xxx"
+export GERMAN_OCR_API_SECRET="your_secret"
+```
+
+Die Skripte laden Credentials automatisch aus Umgebungsvariablen:
 
 ```php
-define('API_ENDPOINT', 'https://api.german-ocr.de/v1/analyze');
 define('API_KEY', getenv('GERMAN_OCR_API_KEY') ?: 'YOUR_API_KEY');
 define('API_SECRET', getenv('GERMAN_OCR_API_SECRET') ?: 'YOUR_API_SECRET');
 ```
 
-**Für produktiven Einsatz:** Credentials aus Umgebungsvariablen laden:
+---
+
+## Modelle
+
+| Modell | Beschreibung | Preis | Empfehlung |
+|--------|--------------|-------|------------|
+| `german-ocr-ultra` | Maximale Praezision | 0,05 EUR/Seite | **Standard** |
+| `german-ocr-pro` | Schnell und zuverlaessig | 0,05 EUR/Seite | Hoher Durchsatz |
+| `german-ocr` | Lokal, DSGVO-optimal | 0,02 EUR/Seite | Sensible Daten |
+
+---
+
+## API Flow im Detail
+
+### Schritt 1: Job senden
 
 ```php
-// Mit getenv()
-define('API_ENDPOINT', getenv('GERMAN_OCR_ENDPOINT') ?: 'https://api.german-ocr.de/v1/analyze');
-define('API_KEY', getenv('GERMAN_OCR_API_KEY'));
-define('API_SECRET', getenv('GERMAN_OCR_API_SECRET'));
+$response = $client->post('/v1/analyze', [
+    'headers' => ['Authorization' => "Bearer $key:$secret"],
+    'multipart' => [
+        ['name' => 'file', 'contents' => fopen($path, 'r'), 'filename' => $name],
+        ['name' => 'model', 'contents' => 'german-ocr-ultra'],
+    ],
+]);
 
-// Mit $_ENV (PHP 7.1+)
-define('API_KEY', $_ENV['GERMAN_OCR_API_KEY'] ?? null);
+// Response: 202 Accepted
+// {"job_id": "abc-123", "status": "pending", "model": "German-OCR Ultra"}
 ```
 
----
-
-## Modell-Optionen
-
-| Modell | Beschreibung | Geschwindigkeit | Qualität |
-|--------|--------------|-----------------|----------|
-| `german-ocr-ultra` | Maximale Präzision für komplexe Dokumente | ⚡⚡ | ⭐⭐⭐ |
-| `german-ocr-pro` | Schnell und zuverlässig | ⚡⚡⚡ | ⭐⭐ |
-| `german-ocr` | Lokal auf eigenen Servern | ⚡ | ⭐⭐ |
-
----
-
-## Integration in eigene Anwendungen
-
-### WordPress Plugin
+### Schritt 2: Status pollen
 
 ```php
-<?php
-// wp-german-ocr.php
-require_once __DIR__ . '/simple_curl.php';
+do {
+    $status = $client->get("/v1/jobs/$jobId", [
+        'headers' => ['Authorization' => "Bearer $key:$secret"],
+    ]);
 
-function german_ocr_process_attachment($attachment_id) {
-    $file_path = get_attached_file($attachment_id);
+    $data = json_decode($status->getBody(), true);
 
-    try {
-        $result = analyzeDocument($file_path);
+    if ($data['status'] === 'completed') {
+        return $data['result'];  // OCR-Text
+    }
 
-        // OCR-Text als Post-Meta speichern
-        update_post_meta($attachment_id, 'ocr_text', $result['text']);
-        update_post_meta($attachment_id, 'ocr_model', $result['model_used']);
+    if ($data['status'] === 'failed') {
+        throw new Exception($data['error']);
+    }
 
-        return $result;
+    sleep(2);  // 2 Sekunden warten
 
-    } catch (Exception $e) {
-        error_log('German-OCR Error: ' . $e->getMessage());
-        return false;
+} while ($data['status'] === 'pending' || $data['status'] === 'processing');
+```
+
+### Response bei Fertigstellung
+
+```json
+{
+    "job_id": "abc-123",
+    "status": "completed",
+    "result": "RECHNUNG Nr. 2026-001\nDatum: 07.01.2026...",
+    "model": "German-OCR Ultra",
+    "tokens": {"input": 2623, "output": 91},
+    "processing_time_ms": 2101,
+    "price_display": "0,05 EUR",
+    "privacy": {
+        "processing_location": "EU (Frankfurt)",
+        "gdpr_compliant": true,
+        "local_processing": false
     }
 }
-
-// Hook für neue Uploads
-add_action('add_attachment', 'german_ocr_process_attachment');
 ```
 
-### Laravel Integration
+---
+
+## Integration in Frameworks
+
+### Laravel Service
 
 ```php
 <?php
@@ -220,236 +264,109 @@ use GuzzleHttp\Client;
 
 class GermanOcrService
 {
-    private $client;
+    private Client $client;
+    private string $authToken;
 
     public function __construct()
     {
+        $key = config('services.german_ocr.key');
+        $secret = config('services.german_ocr.secret');
+
+        $this->authToken = "$key:$secret";
         $this->client = new Client([
-            'base_uri' => config('services.german_ocr.endpoint'),
-            'timeout' => 60,
-        ]);
-    }
-
-    public function analyze($filePath, $prompt = null, $model = 'german-ocr-pro')
-    {
-        $multipart = [
-            [
-                'name' => 'file',
-                'contents' => fopen($filePath, 'r'),
-                'filename' => basename($filePath)
-            ],
-            [
-                'name' => 'model',
-                'contents' => $model
-            ]
-        ];
-
-        if ($prompt) {
-            $multipart[] = [
-                'name' => 'prompt',
-                'contents' => $prompt
-            ];
-        }
-
-        $authToken = config('services.german_ocr.key') . ':' . config('services.german_ocr.secret');
-
-        $response = $this->client->post('/v1/analyze', [
-            'headers' => [
-                'Authorization' => "Bearer $authToken"
-            ],
-            'multipart' => $multipart
-        ]);
-
-        return json_decode($response->getBody(), true);
-    }
-}
-```
-
-```php
-// config/services.php
-return [
-    'german_ocr' => [
-        'endpoint' => env('GERMAN_OCR_ENDPOINT', 'https://api.german-ocr.de'),
-        'key' => env('GERMAN_OCR_API_KEY'),
-        'secret' => env('GERMAN_OCR_API_SECRET'),
-    ],
-];
-```
-
-### Symfony Integration
-
-```php
-<?php
-// src/Service/GermanOcrService.php
-namespace App\Service;
-
-use GuzzleHttp\Client;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
-
-class GermanOcrService
-{
-    private Client $client;
-    private array $config;
-
-    public function __construct(ParameterBagInterface $params)
-    {
-        $this->config = $params->get('german_ocr');
-
-        $this->client = new Client([
-            'base_uri' => $this->config['endpoint'],
-            'timeout' => 60,
+            'base_uri' => 'https://api.german-ocr.de',
+            'timeout' => 30,
         ]);
     }
 
     public function analyze(string $filePath, ?string $prompt = null): array
     {
-        // Implementierung wie Laravel-Beispiel
+        // 1. Job senden
+        $jobId = $this->submitJob($filePath, $prompt);
+
+        // 2. Auf Ergebnis warten
+        return $this->pollUntilComplete($jobId);
     }
-}
-```
 
-### Vanilla PHP REST API
+    private function submitJob(string $filePath, ?string $prompt): string
+    {
+        $multipart = [
+            ['name' => 'file', 'contents' => fopen($filePath, 'r')],
+            ['name' => 'model', 'contents' => 'german-ocr-ultra'],
+        ];
 
-```php
-<?php
-// api/ocr.php
-header('Content-Type: application/json');
+        if ($prompt) {
+            $multipart[] = ['name' => 'prompt', 'contents' => $prompt];
+        }
 
-require_once __DIR__ . '/../simple_curl.php';
+        $response = $this->client->post('/v1/analyze', [
+            'headers' => ['Authorization' => "Bearer {$this->authToken}"],
+            'multipart' => $multipart,
+        ]);
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'POST required']);
-    exit;
-}
-
-if (!isset($_FILES['file'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Keine Datei']);
-    exit;
-}
-
-$file = $_FILES['file'];
-$prompt = $_POST['prompt'] ?? null;
-$model = $_POST['model'] ?? 'german-ocr-pro';
-
-try {
-    // Temporäre Datei verwenden
-    $result = analyzeDocument($file['tmp_name'], $prompt, $model);
-    echo json_encode($result);
-
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
-}
-```
-
----
-
-## Fehlerbehandlung
-
-### cURL-Fehler
-
-```php
-if (curl_errno($ch)) {
-    $error = curl_error($ch);
-    $errno = curl_errno($ch);
-    curl_close($ch);
-
-    switch ($errno) {
-        case CURLE_OPERATION_TIMEDOUT:
-            throw new Exception("Timeout nach 60 Sekunden");
-        case CURLE_COULDNT_CONNECT:
-            throw new Exception("Verbindung fehlgeschlagen");
-        case CURLE_SSL_CERTPROBLEM:
-            throw new Exception("SSL-Zertifikatsfehler");
-        default:
-            throw new Exception("cURL-Fehler ($errno): $error");
+        $data = json_decode($response->getBody(), true);
+        return $data['job_id'];
     }
-}
-```
 
-### Guzzle Exceptions
+    private function pollUntilComplete(string $jobId, int $maxAttempts = 60): array
+    {
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $response = $this->client->get("/v1/jobs/$jobId", [
+                'headers' => ['Authorization' => "Bearer {$this->authToken}"],
+            ]);
 
-```php
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
+            $data = json_decode($response->getBody(), true);
 
-try {
-    $response = $client->request('POST', $endpoint, [...]);
+            if ($data['status'] === 'completed') {
+                return $data;
+            }
 
-} catch (ConnectException $e) {
-    // Verbindungsfehler
-    echo "Verbindung fehlgeschlagen: " . $e->getMessage();
+            if ($data['status'] === 'failed') {
+                throw new \Exception($data['error'] ?? 'Job fehlgeschlagen');
+            }
 
-} catch (RequestException $e) {
-    // HTTP-Fehler (4xx, 5xx)
-    if ($e->hasResponse()) {
-        $statusCode = $e->getResponse()->getStatusCode();
-        $body = (string) $e->getResponse()->getBody();
-        echo "API-Fehler ($statusCode): $body";
+            sleep(2);
+        }
+
+        throw new \Exception('Timeout: Job nicht rechtzeitig abgeschlossen');
     }
 }
 ```
 
 ---
 
-## Performance-Tipps
+## Timeout-Konfiguration
 
-1. **Guzzle für Batch:** Bei mehreren Dateien asynchrone Guzzle-Requests verwenden
-2. **Connection Pooling:** Guzzle Client wiederverwenden
-3. **Modell-Wahl:** `german-ocr-pro` für beste Balance zwischen Geschwindigkeit und Qualität
-4. **Timeout anpassen:** Bei großen PDFs Timeout erhöhen
-5. **Memory Limit:** Bei großen Dateien `memory_limit` erhöhen
+Die SDKs verwenden folgende Timeouts:
 
-```php
-// Memory Limit erhöhen
-ini_set('memory_limit', '512M');
+| Einstellung | Wert | Beschreibung |
+|-------------|------|--------------|
+| `TIMEOUT_SUBMIT` | 30s | Fuer Job-Submission |
+| `TIMEOUT_POLL` | 10s | Fuer Status-Abfragen |
+| `MAX_POLL_ATTEMPTS` | 120 | Max. Poll-Versuche |
+| `POLL_INTERVAL` | 2s | Zeit zwischen Polls |
 
-// Timeout erhöhen
-curl_setopt($ch, CURLOPT_TIMEOUT, 120); // 2 Minuten
-```
+**Maximale Wartezeit:** 120 × 2s = **4 Minuten**
 
 ---
 
 ## Troubleshooting
 
-### "Call to undefined function curl_init()"
-```bash
-# Ubuntu/Debian
-sudo apt-get install php-curl
-sudo systemctl restart apache2
+### "API-Fehler (202): ..."
 
-# Windows: php.ini bearbeiten
-extension=curl
-```
+Das ist **kein Fehler**! 202 ist der korrekte Response-Code. Die alten Skripte erwarteten faelschlicherweise 200.
 
-### "Class 'GuzzleHttp\Client' not found"
-```bash
-composer require guzzlehttp/guzzle
-```
+### Job bleibt auf "pending"
 
-### "Failed to open stream: Permission denied"
-Datei-Berechtigungen prüfen:
-```bash
-chmod 644 rechnung.jpg
-```
+- Pruefe API-Auslastung
+- Erhoehe `MAX_POLL_ATTEMPTS`
+- Nutze `--no-wait` und pruefe spaeter
 
-### "SSL certificate problem: unable to get local issuer certificate"
-Nur für Entwicklung (NICHT für Produktion):
+### Timeout bei grossen Dateien
+
 ```php
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-```
-
-### "Maximum execution time exceeded"
-In php.ini:
-```ini
-max_execution_time = 120
-```
-
-Oder im Skript:
-```php
-set_time_limit(120);
+define('TIMEOUT_SUBMIT', 60);      // Erhoehen
+define('MAX_POLL_ATTEMPTS', 180);  // Laenger warten
 ```
 
 ---
@@ -458,8 +375,8 @@ set_time_limit(120);
 
 - Dokumentation: https://german-ocr.de/docs
 - Support: support@keyvan.ai
-- Issues: https://github.com/Keyvanhardani/German-OCR-Enterprise-Platform/issues
+- GitHub: https://github.com/Keyvanhardani/German-OCR-Enterprise-Platform
 
 ---
 
-**Entwickelt von Keyvan.ai** | Powered by German-OCR
+**Entwickelt von Keyvan.ai** | German-OCR Enterprise Platform
