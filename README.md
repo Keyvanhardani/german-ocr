@@ -48,15 +48,15 @@
 
 ## ✨ Features
 
-| Feature | Local | Cloud |
-|---------|-------|-------|
-| **German Documents** | Invoices, contracts, forms | All document types |
-| **Output Formats** | Markdown, JSON, text | JSON, Markdown, text, n8n |
-| **PDF Support** | Images only | Up to 50 pages |
-| **Privacy** | 100% local | DSGVO-konform (Frankfurt) |
-| **Speed** | ~5s/page | ~2-3s/page |
-| **Backends** | Ollama, llama.cpp, HuggingFace | Cloud API |
-| **Hardware** | CPU, GPU, NPU (CUDA/Metal/Vulkan/OpenVINO) | Managed |
+| Feature | Local | Cloud (v1) | Cloud (v2) |
+|---------|-------|------------|------------|
+| **German Documents** | Invoices, contracts, forms | All document types | Structured extraction |
+| **Output Formats** | Markdown, JSON, text | JSON, Markdown, text, n8n | Typed JSON fields |
+| **PDF Support** | Images only | Up to 50 pages | Up to 50 pages |
+| **Privacy** | 100% local | DSGVO-konform (Frankfurt) | DSGVO-konform (Frankfurt) |
+| **Speed** | ~5s/page | ~2-3s/page (async) | Instant (synchronous) |
+| **Backends** | Ollama, llama.cpp, HuggingFace | Cloud API | Cloud API |
+| **Hardware** | CPU, GPU, NPU (CUDA/Metal/Vulkan/OpenVINO) | Managed | Managed |
 
 ## 📦 Installation
 
@@ -188,6 +188,7 @@ ocr = GermanOCR(backend="llamacpp", n_gpu_layers=-1)
 | **German-OCR Ultra** | `german-ocr-ultra` | Maximale Präzision, Strukturerkennung |
 | **German-OCR Pro** | `german-ocr-pro` | Balance aus Speed & Qualität |
 | **German-OCR Turbo** | `german-ocr` | DSGVO-konform, lokale Verarbeitung in DE |
+| **Privacy Shield** | `privacy-shield` | PII-Erkennung & Anonymisierung |
 
 ### Model Selection
 
@@ -207,7 +208,47 @@ result = client.analyze("dokument.pdf", model="german-ocr-pro")
 
 # German-OCR Turbo - Lokal, DSGVO-konform
 result = client.analyze("dokument.pdf", model="german-ocr")
+
+# Privacy Shield - PII detection & anonymization
+result = client.analyze("dokument.pdf", model="privacy-shield")
 ```
+
+---
+
+## 🆕 German-OCR v2 — Premium Structured Extraction
+
+v2 is a **synchronous** premium API that returns structured JSON instantly — no job polling needed.
+
+**Base URL:** `https://api.german-ocr.de/v2/analyze` &nbsp;|&nbsp; **Price:** €0.10/page
+
+### v2 Templates
+
+| Template | Use Case | Key Fields |
+|----------|----------|------------|
+| `general` | Auto-detect document type | `document_type`, `sender`, `amounts`, `iban`, `full_text` |
+| `invoice` | German invoices | `rechnungssteller`, `rechnungsnummer`, `positionen`, `gesamtbetrag`, `iban` |
+| `delivery-notes` | Delivery notes | `belegnummer`, `belegdatum`, `empfaenger`, `positionen` |
+| `document-intelligence` | Bounding box extraction | Field coordinates for visual annotation |
+
+### v2 Quick Start (Python)
+
+```python
+import httpx
+
+response = httpx.post(
+    "https://api.german-ocr.de/v2/analyze",
+    headers={"Authorization": f"Bearer {api_key}:{api_secret}"},
+    files={"file": open("invoice.pdf", "rb")},
+    data={"template": "invoice"}
+)
+result = response.json()
+print(result["result"]["rechnungsnummer"])  # "2024-001"
+print(result["result"]["gesamtbetrag"])     # "1.499,99"
+```
+
+> **Note:** v2 uses `template` (not `model`!) as the parameter name.
+
+---
 
 ## 💻 CLI Usage
 
@@ -244,7 +285,20 @@ german-ocr --batch ./invoices/
 german-ocr --format json invoice.png
 ```
 
-## 🔌 Cloud API
+## 🔌 API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/analyze` | POST | OCR analysis (async, needs polling) |
+| `/v1/jobs/{id}` | GET | Job status + result |
+| `/v1/jobs/{id}` | DELETE | Cancel job |
+| `/v1/models` | GET | List available models |
+| `/v1/balance` | GET | Account balance |
+| `/v1/usage` | GET | Usage statistics |
+| `/v2/analyze` | POST | Premium analysis (sync, instant) |
+| `/v2/models` | GET | List v2 templates |
+
+> Full API documentation: [german-ocr.de/docs](https://german-ocr.de/docs)
 
 ### Output Formats
 
@@ -274,7 +328,7 @@ result = client.analyze(
 )
 ```
 
-### Async Processing
+### Async Processing (v1)
 
 ```python
 # Submit job with German-OCR Pro
@@ -303,6 +357,14 @@ print(f"Balance: {balance}")
 usage = client.get_usage()
 print(f"Usage: {usage}")
 ```
+
+## 🔗 Integrations
+
+| Category | Platforms |
+|----------|-----------|
+| **Automation** | Zapier, Make.com, n8n |
+| **CMS** | WordPress Plugin, Magento 2, TYPO3, Shopify |
+| **Frameworks** | Laravel, Symfony, Django, Flask, Spring Boot, .NET, Ruby on Rails |
 
 ## 🏠 Local Models
 
