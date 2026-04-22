@@ -24,6 +24,25 @@
 
 ---
 
+> ### 🆕 German-OCR-3 v0.2 — released April 2026
+>
+> Compact, local-first German document Vision-OCR on a fresh Qwen3.5 architecture. **Zero hallucination on 200+ anonymized German invoices**, 100 % valid JSON output, Apache 2.0.
+>
+> ```bash
+> # Default edition (2.7 GB) — best quality, 4–6 GB VRAM
+> ollama pull Keyvan/german-ocr-3
+>
+> # Edge edition (1.0 GB) — CPU / mobile / batch
+> ollama pull Keyvan/german-ocr-nano
+> ```
+>
+> 🤗 **Hugging Face (GGUF bundle)** · [Keyven/german-ocr-3](https://huggingface.co/Keyven/german-ocr-3)
+> 🦙 **Ollama Hub** · [Keyvan/german-ocr-3](https://ollama.com/Keyvan/german-ocr-3) · [Keyvan/german-ocr-nano](https://ollama.com/Keyvan/german-ocr-nano)
+> 🌐 **Hosted API (Premium · EU-hosted)** · [german-ocr.de](https://german-ocr.de)
+
+---
+
+
 ## 🚀 Supported Backends
 
 <p align="center">
@@ -143,8 +162,12 @@ echo $result['text'];
 Requires [Ollama](https://ollama.ai) installed.
 
 ```bash
-# Install model
-ollama pull Keyvan/german-ocr-turbo
+# v0.2 (recommended — new default)
+ollama pull Keyvan/german-ocr-3
+# or edge / CPU edition
+ollama pull Keyvan/german-ocr-nano
+# legacy (v1, still works — auto-upgrades to v0.2 content)
+ollama pull Keyvan/german-ocr
 ```
 
 ```python
