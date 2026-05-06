@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>German-OCR 3.1 — Live Form Filler</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --brand: #0284c7;
+    --brand-light: #0ea5e9;
+    --brand-bg: #e0f2fe;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #fbbf24;
+    --green: #10b981;
+    --green-bg: #d1fae5;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+    color: white;
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header .meta { font-size: 0.85rem; opacity: 0.9; }
+  header .pill {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 12px;
+    border-radius: 12px;
+    margin-left: 8px;
+    font-size: 0.75rem;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+
+  .panel {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-body { padding: 20px; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .form-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .form-input {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: white;
+    transition: all 0.2s;
+    color: var(--text);
+  }
+  .form-input.empty { background: #fafafa; color: #cbd5e1; }
+  .form-input.filling {
+    background: #fef3c7;
+    border-color: var(--accent);
+    color: #92400e;
+  }
+  .form-input.filled {
+    background: var(--green-bg);
+    border-color: var(--green);
+    color: #065f46;
+    font-weight: 600;
+  }
+
+  .section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin: 16px 0 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .section-title:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 0.85rem;
+  }
+  .items-table th, .items-table td {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .items-table th {
+    background: var(--bg);
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+  .items-table td.num { text-align: right; }
+  .items-table tr.empty td { color: #cbd5e1; }
+  .items-table tr.filling td { background: #fef3c7; color: #92400e; }
+  .items-table tr.filled td { background: var(--green-bg); color: #065f46; font-weight: 600; }
+
+  .dropzone {
+    border: 3px dashed var(--brand-light);
+    border-radius: 12px;
+    background: var(--brand-bg);
+    padding: 60px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    background: #bae6fd;
+    border-color: var(--brand);
+    transform: scale(1.01);
+  }
+  .dropzone.has-file {
+    padding: 20px;
+    background: white;
+    border-style: solid;
+  }
+  .dropzone-icon { font-size: 4rem; margin-bottom: 16px; }
+  .dropzone-text { color: var(--brand); font-weight: 600; font-size: 1.1rem; }
+  .dropzone-hint { color: var(--muted); font-size: 0.85rem; margin-top: 8px; }
+
+  .preview-img {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .btn {
+    flex: 1;
+    background: var(--brand);
+    color: white;
+    border: none;
+    padding: 14px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .btn:hover:not(:disabled) { background: var(--brand-light); transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.outline {
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .status {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 8px;
+    border-left: 4px solid var(--brand);
+    font-size: 0.9rem;
+  }
+  .status.error { border-left-color: #dc2626; background: #fee2e2; color: #991b1b; }
+  .status.success { border-left-color: var(--green); background: var(--green-bg); color: #065f46; }
+  .status.processing { border-left-color: var(--accent); background: #fef3c7; color: #92400e; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .status-time { font-family: ui-monospace, monospace; font-weight: 700; color: var(--brand); }
+
+  .config {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .config code { background: white; padding: 2px 6px; border-radius: 4px; color: var(--text); }
+
+  .raw-output {
+    margin-top: 16px;
+    background: #0f172a;
+    color: #cbd5e1;
+    padding: 16px;
+    border-radius: 8px;
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+  .raw-output.show { display: block; }
+  .raw-toggle {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  footer a { color: var(--brand); text-decoration: none; margin: 0 8px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🇩🇪 German-OCR 3.1 — Live Form Filler</h1>
+    <div class="meta">Lade ein deutsches Dokument hoch und schaue zu, wie das Formular sich automatisch füllt.</div>
+  </div>
+  <div>
+    <span class="pill">⚡ Lokal</span>
+    <span class="pill">📦 Apache 2.0</span>
+    <span class="pill">🦙 Ollama</span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="panel">
+    <div class="panel-header">📋 Rechnung erfassen</div>
+    <div class="panel-body" id="form-panel">
+      <div class="section-title">Allgemein</div>
+      <div class="form-row"><label class="form-label">Rechnungsnr.</label><input class="form-input empty" data-field="invoice_number" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Rechnungsdatum</label><input class="form-input empty" data-field="invoice_date" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Fällig bis</label><input class="form-input empty" data-field="due_date" placeholder="—" readonly></div>
+
+      <div class="section-title">Sender</div>
+      <div class="form-row"><label class="form-label">Firma</label><input class="form-input empty" data-field="sender.name" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Adresse</label><input class="form-input empty" data-field="sender.address" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">USt-IdNr.</label><input class="form-input empty" data-field="sender.vat_id" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">IBAN</label><input class="form-input empty" data-field="sender.iban" placeholder="—" readonly></div>
+
+      <div class="section-title">Empfänger</div>
+      <div class="form-row"><label class="form-label">Name</label><input class="form-input empty" data-field="recipient.name" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Adresse</label><input class="form-input empty" data-field="recipient.address" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Kundennr.</label><input class="form-input empty" data-field="recipient.customer_id" placeholder="—" readonly></div>
+
+      <div class="section-title">Beträge</div>
+      <div class="form-row"><label class="form-label">Netto</label><input class="form-input empty" data-field="amount_net" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">MwSt.</label><input class="form-input empty" data-field="amount_vat" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Brutto</label><input class="form-input empty" data-field="amount_total" placeholder="—" readonly></div>
+      <div class="form-row"><label class="form-label">Währung</label><input class="form-input empty" data-field="currency" placeholder="—" readonly></div>
+
+      <div class="section-title">Positionen</div>
+      <table class="items-table">
+        <thead><tr><th>Pos.</th><th>Beschreibung</th><th>Menge</th><th>Einzelpreis</th><th>Netto</th></tr></thead>
+        <tbody id="items-tbody">
+          <tr class="empty"><td>—</td><td>—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr class="empty"><td>—</td><td>—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+          <tr class="empty"><td>—</td><td>—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">📤 Original hochladen</div>
+    <div class="panel-body">
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone-icon">📄</div>
+        <div class="dropzone-text">Bild oder PDF hier hineinziehen</div>
+        <div class="dropzone-hint">oder klick um Datei zu wählen — JPEG, PNG, WebP</div>
+        <input type="file" id="file-input" accept="image/*" style="display:none">
+      </div>
+
+      <div class="actions">
+        <button class="btn outline" id="btn-demo">📎 Demo-Bild laden</button>
+        <button class="btn" id="btn-extract" disabled>🚀 Extrahieren starten</button>
+      </div>
+
+      <div class="status" id="status">
+        <div class="status-row">
+          <span>Bereit. Wähle ein Dokument um zu starten.</span>
+          <span class="status-time" id="status-time">—</span>
+        </div>
+      </div>
+
+      <div class="config">
+        <strong>Backend:</strong> <code id="ollama-url">http://localhost:11434</code> ·
+        <strong>Modell:</strong> <code>Keyvan/german-ocr-3.1</code>
+      </div>
+
+      <div class="raw-toggle" onclick="document.getElementById('raw-output').classList.toggle('show')">▸ Rohes JSON anzeigen</div>
+      <div class="raw-output" id="raw-output">— noch keine Antwort —</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <strong>Voraussetzung:</strong> <code>ollama pull Keyvan/german-ocr-3.1</code> · CORS aktiv via <code>OLLAMA_ORIGINS=*</code>
+  <br><br>
+  <a href="https://ollama.com/Keyvan/german-ocr-3.1">🦙 Ollama Hub</a>
+  <a href="https://huggingface.co/Keyven/german-ocr-3.1">🤗 Hugging Face</a>
+  <a href="https://german-ocr.de">🌐 german-ocr.de</a>
+</footer>
+
+<script>
+const OLLAMA_URL = "http://localhost:11434";
+const MODEL = "Keyvan/german-ocr-3.1";
+const PROMPT = "Extrahiere diese deutsche Rechnung als JSON nach Standard-Schema mit document_type, invoice_number, invoice_date, due_date, sender (name, address, vat_id, iban), recipient (name, address, customer_id), line_items array (position, description, quantity, unit_price_net, amount_net, vat_rate), amount_net, amount_vat, amount_total, currency. Antworte NUR mit JSON.";
+
+let currentImage = null;
+
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("file-input");
+const btnExtract = document.getElementById("btn-extract");
+const btnDemo = document.getElementById("btn-demo");
+const statusEl = document.getElementById("status");
+const statusTime = document.getElementById("status-time");
+const rawOutput = document.getElementById("raw-output");
+
+function setStatus(msg, kind = "") {
+  statusEl.className = "status " + kind;
+  statusEl.querySelector("span:first-child").textContent = msg;
+}
+
+function loadImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    currentImage = e.target.result.split(",")[1];
+    dropzone.classList.add("has-file");
+    dropzone.innerHTML = `<img src="${e.target.result}" class="preview-img" alt="Preview">`;
+    btnExtract.disabled = false;
+    setStatus(`Datei geladen: ${file.name} (${(file.size/1024).toFixed(0)} KB)`, "success");
+  };
+  reader.readAsDataURL(file);
+}
+
+dropzone.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", (e) => {
+  if (e.target.files[0]) loadImageFile(e.target.files[0]);
+});
+dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+dropzone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  if (e.dataTransfer.files[0]) loadImageFile(e.dataTransfer.files[0]);
+});
+
+btnDemo.addEventListener("click", async () => {
+  setStatus("Lade Demo-Bild...", "processing");
+  try {
+    const res = await fetch("./demo_invoice.png");
+    if (!res.ok) throw new Error("Demo-Bild nicht gefunden — kopiere demo_invoice.png ins gleiche Verzeichnis");
+    const blob = await res.blob();
+    const file = new File([blob], "demo_invoice.png", {type: "image/png"});
+    loadImageFile(file);
+  } catch (e) {
+    setStatus("Demo-Bild konnte nicht geladen werden: " + e.message, "error");
+  }
+});
+
+function getField(name) {
+  return document.querySelector(`[data-field="${name}"]`);
+}
+
+function fillField(name, value, delay = 0) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const el = getField(name);
+      if (!el) { resolve(); return; }
+      el.classList.remove("empty");
+      el.classList.add("filling");
+      el.value = "";
+      const text = String(value ?? "").trim() || "—";
+      let i = 0;
+      const speed = 20;
+      const step = () => {
+        if (i >= text.length) {
+          el.classList.remove("filling");
+          el.classList.add("filled");
+          resolve();
+          return;
+        }
+        el.value += text[i];
+        i++;
+        setTimeout(step, speed);
+      };
+      step();
+    }, delay);
+  });
+}
+
+async function fillItemRow(rowIndex, item) {
+  const tbody = document.getElementById("items-tbody");
+  const row = tbody.children[rowIndex];
+  if (!row) return;
+  row.classList.remove("empty");
+  row.classList.add("filling");
+  const cells = row.children;
+  cells[0].textContent = item.position ?? rowIndex+1;
+  cells[1].textContent = item.description || "—";
+  cells[2].textContent = item.quantity != null ? `${item.quantity}${item.unit ? " " + item.unit : ""}` : "—";
+  cells[3].textContent = item.unit_price_net != null ? `${item.unit_price_net.toFixed(2)} EUR` : "—";
+  cells[4].textContent = item.amount_net != null ? `${item.amount_net.toFixed(2)} EUR` : "—";
+  await new Promise(r => setTimeout(r, 300));
+  row.classList.remove("filling");
+  row.classList.add("filled");
+}
+
+function resetForm() {
+  document.querySelectorAll(".form-input").forEach(el => {
+    el.value = "";
+    el.className = "form-input empty";
+  });
+  const tbody = document.getElementById("items-tbody");
+  Array.from(tbody.children).forEach(row => {
+    row.className = "empty";
+    Array.from(row.children).forEach((c, i) => c.textContent = "—");
+  });
+}
+
+async function fillFormFromJSON(data) {
+  resetForm();
+  await new Promise(r => setTimeout(r, 200));
+  const fields = [
+    "invoice_number", "invoice_date", "due_date",
+    "sender.name", "sender.address", "sender.vat_id", "sender.iban",
+    "recipient.name", "recipient.address", "recipient.customer_id",
+    "amount_net", "amount_vat", "amount_total", "currency",
+  ];
+  for (const f of fields) {
+    const parts = f.split(".");
+    let v = data;
+    for (const p of parts) v = v?.[p];
+    if (typeof v === "number") v = v.toFixed(2);
+    await fillField(f, v, 30);
+  }
+  if (Array.isArray(data.line_items)) {
+    for (let i = 0; i < Math.min(3, data.line_items.length); i++) {
+      await fillItemRow(i, data.line_items[i]);
+    }
+  }
+}
+
+btnExtract.addEventListener("click", async () => {
+  if (!currentImage) return;
+  btnExtract.disabled = true;
+  resetForm();
+  setStatus("Anfrage wird an Ollama gesendet...", "processing");
+  statusTime.textContent = "...";
+  rawOutput.textContent = "";
+  rawOutput.classList.remove("show");
+
+  const t0 = performance.now();
+  let elapsedTimer = setInterval(() => {
+    statusTime.textContent = ((performance.now() - t0)/1000).toFixed(1) + "s";
+  }, 100);
+
+  try {
+    const body = {
+      model: MODEL,
+      messages: [{ role: "user", content: PROMPT, images: [currentImage] }],
+      stream: false,
+      think: false,
+      options: { temperature: 0, num_predict: 2000 },
+    };
+    setStatus("German-OCR-3.1 verarbeitet das Bild...", "processing");
+    const res = await fetch(OLLAMA_URL + "/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    clearInterval(elapsedTimer);
+    const elapsed = ((performance.now() - t0)/1000).toFixed(2);
+    statusTime.textContent = elapsed + "s";
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} — Ollama Daemon erreichbar? Ist Modell gepullt?`);
+    }
+    const data = await res.json();
+    const content = data.message?.content || "";
+    rawOutput.textContent = content;
+
+    let parsed;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Kein JSON in der Antwort gefunden");
+    parsed = JSON.parse(jsonMatch[0]);
+
+    setStatus(`✓ Extrahiert in ${elapsed}s — Formular wird gefüllt...`, "success");
+    await fillFormFromJSON(parsed);
+    setStatus(`✓ Fertig! ${Object.keys(parsed).length} Top-Level-Felder, ${parsed.line_items?.length || 0} Positionen.`, "success");
+  } catch (e) {
+    clearInterval(elapsedTimer);
+    setStatus(`Fehler: ${e.message}`, "error");
+    rawOutput.classList.add("show");
+  } finally {
+    btnExtract.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

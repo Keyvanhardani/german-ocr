@@ -24,21 +24,27 @@
 
 ---
 
-> ### 🆕 German-OCR-3 v0.2 — released April 2026
+> ### 🆕 German-OCR 3.1 Collection — released May 2026
 >
-> Compact, local-first German document Vision-OCR on a fresh Qwen3.5 architecture. **Zero hallucination on 200+ anonymized German invoices**, 100 % valid JSON output, Apache 2.0.
+> Engineered + optimized German document AI on Qwen 3.5. **Zero hallucination on real German invoices**, 100 % valid JSON output, Apache 2.0.
+> Two specialized models: **Vision-OCR** (image → strict JSON) + **Text-Assistant** (translate, summarize, rewrite, chat).
 >
 > ```bash
-> # Default edition (2.7 GB) — best quality, 4–6 GB VRAM
-> ollama pull Keyvan/german-ocr-3
+> # Vision OCR — Bild → JSON (deutsche Geschäftsdokumente)
+> ollama pull Keyvan/german-ocr-3.1
 >
-> # Edge edition (1.0 GB) — CPU / mobile / batch
-> ollama pull Keyvan/german-ocr-nano
+> # Text-Assistent — Übersetzen, Zusammenfassen, Umschreiben, Chat
+> ollama pull Keyvan/german-text-3.1
 > ```
 >
-> 🤗 **Hugging Face (GGUF bundle)** · [Keyven/german-ocr-3](https://huggingface.co/Keyven/german-ocr-3)
-> 🦙 **Ollama Hub** · [Keyvan/german-ocr-3](https://ollama.com/Keyvan/german-ocr-3) · [Keyvan/german-ocr-nano](https://ollama.com/Keyvan/german-ocr-nano)
-> 🌐 **Hosted API (Premium · EU-hosted)** · [german-ocr.de](https://german-ocr.de)
+> ▶️ **Try it locally** · [`/demo`](./demo) — Browser-based Live Form Filler, drag a German invoice → watch fields auto-fill in real time. No build step, no backend.
+>
+> 🤗 **Hugging Face** · [Keyven/german-ocr-3.1](https://huggingface.co/Keyven/german-ocr-3.1) · [Keyven/german-text-3.1](https://huggingface.co/Keyven/german-text-3.1)
+> 🦙 **Ollama Hub** · [Keyvan/german-ocr-3.1](https://ollama.com/Keyvan/german-ocr-3.1) · [Keyvan/german-text-3.1](https://ollama.com/Keyvan/german-text-3.1)
+> 📝 **Word Add-in** · [office.german-ocr.de](https://office.german-ocr.de)
+> 🌐 **Hosted API (EU-hosted)** · [german-ocr.de](https://german-ocr.de)
+>
+> *Vorgänger v0.2 (Keyvan/german-ocr-3, Keyvan/german-ocr-nano) bleibt verfügbar.*
 
 ---
 
